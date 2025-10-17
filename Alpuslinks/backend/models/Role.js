@@ -7,12 +7,6 @@ const roleSchema = new mongoose.Schema({
     trim: true,
     maxlength: [50, 'Role name cannot exceed 50 characters']
   },
-  description: {
-    type: String,
-    required: [true, 'Role description is required'],
-    trim: true,
-    maxlength: [200, 'Description cannot exceed 200 characters']
-  },
   permissions: [{
     type: String,
     enum: [

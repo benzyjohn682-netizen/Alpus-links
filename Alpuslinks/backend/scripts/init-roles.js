@@ -5,7 +5,6 @@ const Role = require('../models/Role');
 const defaultRoles = [
   {
     name: 'Super Admin',
-    description: 'Full system access with all permissions',
     permissions: [
       'user_management',
       'role_management', 
@@ -31,7 +30,6 @@ const defaultRoles = [
   },
   {
     name: 'Admin',
-    description: 'Administrative access with most permissions',
     permissions: [
       'user_management',
       'role_management',
@@ -54,7 +52,6 @@ const defaultRoles = [
   },
   {
     name: 'Publisher',
-    description: 'Can manage websites and content',
     permissions: [
       'profile_edit',
       'view_content',
@@ -67,7 +64,6 @@ const defaultRoles = [
   },
   {
     name: 'Advertiser',
-    description: 'Can browse and purchase advertising opportunities',
     permissions: [
       'profile_edit',
       'view_content',
@@ -80,7 +76,6 @@ const defaultRoles = [
   },
   {
     name: 'Supportor',
-    description: 'Customer support role with limited permissions',
     permissions: [
       'profile_edit',
       'view_content',

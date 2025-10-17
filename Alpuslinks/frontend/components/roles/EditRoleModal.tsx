@@ -5,7 +5,6 @@ import toast from 'react-hot-toast'
 interface Role {
   _id: string
   name: string
-  description: string
   permissions: string[]
   color: string
   isActive: boolean
@@ -36,7 +35,6 @@ interface EditRoleModalProps {
 export function EditRoleModal({ role, onSave, onCancel }: EditRoleModalProps) {
   const [formData, setFormData] = useState({
     name: role.name,
-    description: role.description,
     permissions: role.permissions,
     color: role.color,
     isActive: role.isActive
@@ -119,19 +117,6 @@ export function EditRoleModal({ role, onSave, onCancel }: EditRoleModalProps) {
               />
             </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                rows={3}
-                required
-              />
-            </div>
 
             {/* Color */}
             <div>

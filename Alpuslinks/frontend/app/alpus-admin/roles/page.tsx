@@ -10,7 +10,6 @@ import toast from 'react-hot-toast'
 interface Role {
   _id: string
   name: string
-  description: string
   permissions: string[]
   color: string
   isActive: boolean
@@ -659,7 +658,6 @@ interface AddRoleModalProps {
 function AddRoleModal({ onSave, onCancel }: AddRoleModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     permissions: [] as string[],
     color: '#3B82F6'
   })
@@ -765,19 +763,6 @@ function AddRoleModal({ onSave, onCancel }: AddRoleModalProps) {
               </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                required
-              />
-            </div>
 
             {/* Permissions */}
             <div>

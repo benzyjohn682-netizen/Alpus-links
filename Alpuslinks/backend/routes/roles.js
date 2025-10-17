@@ -12,7 +12,7 @@ const router = express.Router();
 router.get('/public', async (req, res) => {
   try {
     const roles = await Role.find({ isActive: true })
-      .select('name description color')
+      .select('name color')
       .sort({ name: 1 });
 
     res.json({ roles });
@@ -44,8 +44,7 @@ router.get('/', auth, [
     
     if (req.query.search) {
       filter.$or = [
-        { name: { $regex: req.query.search, $options: 'i' } },
-        { description: { $regex: req.query.search, $options: 'i' } }
+        { name: { $regex: req.query.search, $options: 'i' } }
       ];
     }
 
@@ -105,7 +104,6 @@ router.get('/:id', auth, async (req, res) => {
 // @access  Private
 router.post('/', auth, [
   body('name').trim().notEmpty().withMessage('Role name is required'),
-  body('description').trim().notEmpty().withMessage('Role description is required'),
   body('permissions').isArray({ min: 1 }).withMessage('At least one permission is required'),
   body('permissions.*').isIn([
     'user_management',
@@ -132,7 +130,7 @@ router.post('/', auth, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, description, permissions, color } = req.body;
+    const { name, permissions, color } = req.body;
 
     // Check if role name already exists
     const existingRole = await Role.findOne({ name: { $regex: new RegExp(name, 'i') } });
@@ -143,7 +141,6 @@ router.post('/', auth, [
     // Create new role
     const role = new Role({
       name,
-      description,
       permissions,
       color: color || '#3B82F6',
       createdBy: req.userId
@@ -156,7 +153,6 @@ router.post('/', auth, [
       role: {
         id: role._id,
         name: role.name,
-        description: role.description,
         permissions: role.permissions,
         color: role.color,
         isActive: role.isActive,
@@ -174,7 +170,6 @@ router.post('/', auth, [
 // @access  Private
 router.put('/:id', auth, [
   body('name').optional().trim().notEmpty().withMessage('Role name cannot be empty'),
-  body('description').optional().trim().notEmpty().withMessage('Role description cannot be empty'),
   body('permissions').optional().isArray({ min: 1 }).withMessage('At least one permission is required'),
   body('permissions.*').optional().isIn([
     'user_management',
@@ -207,7 +202,7 @@ router.put('/:id', auth, [
       return res.status(404).json({ message: 'Role not found' });
     }
 
-    const { name, description, permissions, color, isActive } = req.body;
+    const { name, permissions, color, isActive } = req.body;
 
     // Check if name is being changed and if it's already taken
     if (name && name !== role.name) {
@@ -223,7 +218,6 @@ router.put('/:id', auth, [
     // Update role
     const updateData = { updatedBy: req.userId };
     if (name) updateData.name = name;
-    if (description) updateData.description = description;
     if (permissions) updateData.permissions = permissions;
     if (color) updateData.color = color;
     if (isActive !== undefined) updateData.isActive = isActive;
@@ -239,7 +233,6 @@ router.put('/:id', auth, [
       role: {
         id: updatedRole._id,
         name: updatedRole.name,
-        description: updatedRole.description,
         permissions: updatedRole.permissions,
         color: updatedRole.color,
         isActive: updatedRole.isActive,
@@ -318,8 +311,7 @@ router.get('/:id/users', auth, [
     res.json({
       role: {
         id: role._id,
-        name: role.name,
-        description: role.description
+        name: role.name
       },
       users,
       pagination: {
