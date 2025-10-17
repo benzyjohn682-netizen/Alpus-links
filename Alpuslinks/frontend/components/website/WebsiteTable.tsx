@@ -210,6 +210,9 @@ export function WebsiteTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Pricing
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Requirements
+              </th>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                 onClick={() => handleSort('status')}
@@ -321,6 +324,27 @@ export function WebsiteTable({
                       <div>Writing + GP: {formatCurrency(website.pricing.writingGuestPost)}</div>
                     )}
                     {!website.pricing?.guestPost && !website.pricing?.linkInsertion && !website.pricing?.writingGuestPost && (
+                      <span className="text-gray-400">Not set</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <div className="flex flex-col space-y-1">
+                    {website.meta?.minWordCount && (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-gray-600 dark:text-gray-400">Min Words:</span>
+                        <span className="font-medium">{website.meta.minWordCount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {website.meta?.maxLinks && (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-gray-600 dark:text-gray-400">Max Links:</span>
+                        <span className="font-medium">{website.meta.maxLinks}</span>
+                      </div>
+                    )}
+                    {!website.meta?.minWordCount && !website.meta?.maxLinks && (
                       <span className="text-gray-400">Not set</span>
                     )}
                   </div>

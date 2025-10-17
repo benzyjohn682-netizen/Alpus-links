@@ -14,7 +14,8 @@ import {
   BarChart3,
   ChevronDown,
   ChevronRight,
-  Globe
+  Globe,
+  FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
@@ -165,6 +166,11 @@ export function Sidebar() {
         name: 'Available Websites',
         icon: Globe,
         href: '/advertiser/websites'
+      })
+      userChildren.push({
+        name: 'Post Management',
+        icon: FileText,
+        href: '/advertiser/posts'
       })
     }
 

@@ -50,8 +50,21 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
 console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 'undefined');
 
-// Security middleware
-app.use(helmet());
+// Security middleware with COOP configuration for OAuth
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://apis.google.com"],
+      connectSrc: ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+    },
+  },
+}));
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -84,6 +97,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/roles', require('./routes/roles'));
 app.use('/api/user-meta', require('./routes/userMeta'));
 app.use('/api/websites', require('./routes/websites'));
+app.use('/api/posts', require('./routes/posts'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

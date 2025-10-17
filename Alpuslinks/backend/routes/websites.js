@@ -38,8 +38,28 @@ router.get('/publisher/:publisherId', auth, async (req, res) => {
 
     const total = await Website.countDocuments(query);
 
+    // Attach meta data for each website so the UI can display requirements, etc.
+    // Fetch all metas in a single query and group them by websiteId
+    const websiteIds = websites.map(w => w._id);
+    let websitesWithMeta = websites;
+    if (websiteIds.length > 0) {
+      const metaRecords = await WebsiteMeta.find({ websiteId: { $in: websiteIds } });
+      const websiteIdToMeta = {};
+      for (const record of metaRecords) {
+        const id = record.websiteId.toString();
+        if (!websiteIdToMeta[id]) websiteIdToMeta[id] = {};
+        websiteIdToMeta[id][record.metaProperty] = record.metaValue;
+      }
+
+      websitesWithMeta = websites.map(w => {
+        const obj = w.toObject();
+        obj.meta = websiteIdToMeta[w._id.toString()] || {};
+        return obj;
+      });
+    }
+
     res.json({
-      websites,
+      websites: websitesWithMeta,
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       total
@@ -154,8 +174,27 @@ router.get('/advertiser/websites', auth, async (req, res) => {
     const countries = await Website.distinct('country', { status: 'active' });
     const languages = await Website.distinct('language', { status: 'active' });
 
+    // Attach meta for advertiser listing so UI can show requirements
+    const websiteIds = websites.map(w => w._id);
+    let websitesWithMeta = websites;
+    if (websiteIds.length > 0) {
+      const metaRecords = await WebsiteMeta.find({ websiteId: { $in: websiteIds } });
+      const websiteIdToMeta = {};
+      for (const record of metaRecords) {
+        const id = record.websiteId.toString();
+        if (!websiteIdToMeta[id]) websiteIdToMeta[id] = {};
+        websiteIdToMeta[id][record.metaProperty] = record.metaValue;
+      }
+
+      websitesWithMeta = websites.map(w => {
+        const obj = w.toObject();
+        obj.meta = websiteIdToMeta[w._id.toString()] || {};
+        return obj;
+      });
+    }
+
     res.json({
-      websites,
+      websites: websitesWithMeta,
       totalPages: Math.ceil(total / limit),
       currentPage: parseInt(page),
       total,
@@ -458,7 +497,12 @@ router.put('/:id', auth, async (req, res) => {
       await WebsiteMeta.setWebsiteMeta(req.params.id, cleanMetaData);
     }
 
-    res.json(updatedWebsite);
+    // Always attach latest meta in the response so the client can render immediately
+    const meta = await WebsiteMeta.getWebsiteMeta(req.params.id);
+    const responseWithMeta = updatedWebsite.toObject();
+    responseWithMeta.meta = meta;
+
+    res.json(responseWithMeta);
   } catch (error) {
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);

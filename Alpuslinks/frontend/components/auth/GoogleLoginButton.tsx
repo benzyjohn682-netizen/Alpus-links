@@ -104,6 +104,8 @@ export function GoogleLoginButton({ onSuccess, onError }: GoogleLoginButtonProps
         cancel_on_tap_outside: true,
         use_fedcm_for_prompt: false, // Disable FedCM to avoid conflicts
         itp_support: true, // Support Intelligent Tracking Prevention
+        context: 'signin', // Explicitly set context for better COOP compatibility
+        ux_mode: 'popup', // Use popup mode for better COOP compatibility
       })
       console.log('✅ Google Identity Services initialized');
 

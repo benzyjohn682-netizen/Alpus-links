@@ -55,11 +55,57 @@ router.get('/', auth, [
       .skip(skip)
       .limit(limit);
 
+    // Clean up old sessions (older than 24 hours) that are still marked as active
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await LoginSession.updateMany(
+      {
+        isActive: true,
+        loginDate: { $lt: oneDayAgo }
+      },
+      {
+        isActive: false,
+        logoutDate: new Date()
+      }
+    );
+
+    // Check for active sessions for each user
+    const userIds = users.map(user => user._id);
+    const activeSessions = await LoginSession.find({
+      user: { $in: userIds },
+      isActive: true
+    }).select('user loginDate');
+
+    // Create a map of user ID to active session
+    const userActiveSessions = {};
+    activeSessions.forEach(session => {
+      userActiveSessions[session.user.toString()] = session;
+    });
+
+    // Add login state to each user
+    const usersWithLoginState = users.map(user => {
+      const userObj = user.toObject();
+      const activeSession = userActiveSessions[user._id.toString()];
+      
+      // User is online only if they have an active session
+      userObj.isOnline = !!activeSession;
+      
+      // Set last active login - prefer active session, fallback to lastLogin
+      if (activeSession) {
+        userObj.lastActiveLogin = activeSession.loginDate;
+      } else if (user.lastLogin) {
+        userObj.lastActiveLogin = user.lastLogin;
+      } else {
+        userObj.lastActiveLogin = null;
+      }
+      
+      return userObj;
+    });
+
     // Get total count for pagination
     const total = await User.countDocuments(filter);
 
     res.json({
-      users,
+      users: usersWithLoginState,
       pagination: {
         current: page,
         pages: Math.ceil(total / limit),

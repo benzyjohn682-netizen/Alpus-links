@@ -391,6 +391,7 @@ export default function AdvertiserWebsitesPage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Categories</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Metrics</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Prices</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Requirements</th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
@@ -440,6 +441,27 @@ export default function AdvertiserWebsitesPage() {
                               <span>GP: {website.pricing?.guestPost ? `$${website.pricing.guestPost}` : 'N/A'}</span>
                               <span>LI: {website.pricing?.linkInsertion ? `$${website.pricing.linkInsertion}` : 'N/A'}</span>
                               <span>W+GP: {(website as any).pricing?.writingGuestPost ? `$${(website as any).pricing?.writingGuestPost}` : 'N/A'}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <div className="flex flex-col space-y-1">
+                              {(website as any).meta?.minWordCount && (
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+                                  <span className="text-gray-500 dark:text-gray-400">Min Words:</span>
+                                  <span className="font-medium ml-1">{(website as any).meta.minWordCount.toLocaleString()}</span>
+                                </div>
+                              )}
+                              {(website as any).meta?.maxLinks && (
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                                  <span className="text-gray-500 dark:text-gray-400">Max Links:</span>
+                                  <span className="font-medium ml-1">{(website as any).meta.maxLinks}</span>
+                                </div>
+                              )}
+                              {!((website as any).meta?.minWordCount) && !((website as any).meta?.maxLinks) && (
+                                <span className="text-gray-400">Not set</span>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">

@@ -481,6 +481,69 @@ class ApiService {
     return this.request(`/users/login-trends?period=${period}`)
   }
 
+  // Posts endpoints
+  async savePostDraft(postData: {
+    title: string
+    completeUrl: string
+    description?: string
+    metaTitle?: string
+    metaDescription?: string
+    keywords?: string
+    content: string
+    anchorPairs?: { text: string; link: string }[]
+  }) {
+    return this.request('/posts/draft', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    })
+  }
+
+  async submitPost(postData: {
+    title: string
+    completeUrl: string
+    description?: string
+    metaTitle?: string
+    metaDescription?: string
+    keywords?: string
+    content: string
+    anchorPairs?: { text: string; link: string }[]
+  }) {
+    return this.request('/posts/submit', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    })
+  }
+
+  async getPosts() {
+    return this.request<{ posts: any[] }>('/posts')
+  }
+
+  async getPost(postId: string) {
+    return this.request<{ post: any }>(`/posts/${postId}`)
+  }
+
+  async updatePost(postId: string, postData: {
+    title: string
+    completeUrl: string
+    description?: string
+    metaTitle?: string
+    metaDescription?: string
+    keywords?: string
+    content: string
+    anchorPairs?: { text: string; link: string }[]
+  }) {
+    return this.request(`/posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    })
+  }
+
+  async deletePost(postId: string) {
+    return this.request(`/posts/${postId}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Role management endpoints
   async getAllRoles() {
     return this.request('/roles')

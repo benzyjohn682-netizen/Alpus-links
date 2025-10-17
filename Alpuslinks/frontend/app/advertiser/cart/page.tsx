@@ -4,11 +4,13 @@ import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { selectCartItems, selectCartSummary, removeItem, addItem, clearCart } from '@/store/slices/cartSlice'
 import { ShoppingCart, Trash2, CreditCard, Shield, Sparkles, ArrowRight, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function AdvertiserCartPage() {
   const items = useAppSelector(selectCartItems)
   const summary = useAppSelector(selectCartSummary)
   const dispatch = useAppDispatch()
+  const router = useRouter()
 
   const handleAddService = (websiteId: string, domain: string, type: 'guestPost' | 'linkInsertion' | 'writingGuestPost', price: number) => {
     dispatch(addItem({
@@ -17,6 +19,17 @@ export default function AdvertiserCartPage() {
       type,
       price,
     }))
+  }
+
+  const handleAddGP = (websiteId: string, domain: string, price: number) => {
+    dispatch(addItem({
+      websiteId,
+      domain,
+      type: 'guestPost',
+      price,
+    }))
+    // Navigate to create post page
+    router.push('/advertiser/posts/create')
   }
 
   return (
@@ -131,7 +144,7 @@ export default function AdvertiserCartPage() {
                               <div className="flex items-center space-x-2">
                                 {item.type === 'guestPost' && (
                                   <button
-                                    onClick={() => handleAddService(item.websiteId, item.domain, 'guestPost', item.price)}
+                                    onClick={() => handleAddGP(item.websiteId, item.domain, item.price)}
                                     className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
                                   >
                                     <Plus className="w-3 h-3" />

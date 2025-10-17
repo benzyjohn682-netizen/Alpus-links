@@ -865,4 +865,41 @@ router.put('/system-config', authMiddleware, [
   }
 });
 
+// @route   POST /api/auth/logout
+// @desc    Logout user and update session
+// @access  Private
+router.post('/logout', authMiddleware, async (req, res) => {
+  try {
+    console.log('Logout request for user:', req.userId);
+    
+    // Check for active sessions first
+    const activeSessions = await LoginSession.find({
+      user: req.userId,
+      isActive: true
+    });
+    
+    console.log('Active sessions found:', activeSessions.length);
+    
+    // Update the most recent active login session for this user
+    const result = await LoginSession.findOneAndUpdate(
+      { 
+        user: req.userId, 
+        isActive: true 
+      },
+      { 
+        isActive: false, 
+        logoutDate: new Date() 
+      },
+      { sort: { loginDate: -1 } }
+    );
+    
+    console.log('Logout result:', result ? 'Session updated' : 'No active session found');
+
+    res.json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

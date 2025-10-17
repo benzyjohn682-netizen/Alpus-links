@@ -17,6 +17,9 @@ interface User {
     name: string
   }
   status: string
+  lastLogin?: string
+  isOnline?: boolean
+  lastActiveLogin?: string
   createdAt: string
 }
 
@@ -688,6 +691,9 @@ export default function AllUsersPage() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Login State
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Created
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -698,13 +704,13 @@ export default function AllUsersPage() {
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                         Loading...
                       </td>
                     </tr>
                   ) : users.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                         No users found
                       </td>
                     </tr>
@@ -738,6 +744,30 @@ export default function AllUsersPage() {
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(user.status || 'inactive')}`}>
                             {user.status || 'inactive'}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                            <span className="text-sm">
+                              {user.isOnline ? (
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-green-600 dark:text-green-400">Online</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    Since {user.lastActiveLogin ? new Date(user.lastActiveLogin).toLocaleDateString() : 'Unknown'}
+                                  </span>
+                                </div>
+                              ) : (user.lastActiveLogin || user.lastLogin) ? (
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-600 dark:text-gray-400">Offline</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    Last seen {new Date(user.lastActiveLogin || user.lastLogin || '').toLocaleDateString()}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-500 dark:text-gray-400">Never logged in</span>
+                              )}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
