@@ -10,7 +10,7 @@
 2. **Set up Environment Variables**
    Create a `.env` file in the backend directory with:
    ```
-   MONGODB_URI=mongodb://localhost:27017/user-management
+   MONGODB_URI=mongodb://localhost:27017/blog-management
    JWT_SECRET=your-secret-key-here
    PORT=5000
    ```

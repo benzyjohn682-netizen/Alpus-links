@@ -7,7 +7,7 @@ async function addSuperAdmin() {
     console.log('🚀 Adding Super Admin user...');
     
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/user-management');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/blog-management');
     console.log('✅ Connected to MongoDB');
 
     // Check if Super Admin role exists

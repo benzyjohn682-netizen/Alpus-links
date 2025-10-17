@@ -1,5 +1,5 @@
 {
-  "name": "user-management-system",
+  "name": "blog-management-system",
   "version": "1.0.0",
   "description": "User and Role Management System with Next.js and Node.js",
   "scripts": {

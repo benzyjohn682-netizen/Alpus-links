@@ -1,7 +1,7 @@
 {
-  "name": "user-management-backend",
+  "name": "blog-management-backend",
   "version": "1.0.0",
-  "description": "Backend API for user management system",
+  "description": "Backend API for blog management system",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -14,7 +14,7 @@
     "setup": "npm run init-roles && npm run seed-websites && npm run init-config && npm run init-websitemeta",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["user-management", "api", "nodejs", "express", "mongodb"],
+  "keywords": ["blog-management", "api", "nodejs", "express", "mongodb"],
   "author": "",
   "license": "ISC",
   "dependencies": {

@@ -15,7 +15,7 @@ A comprehensive user and role management system built with Next.js frontend and 
 ## Project Structure
 
 ```
-user-management-system/
+blog-management-system/
 ├── frontend/                 # Next.js frontend
 │   ├── app/                 # App router pages
 │   ├── components/          # React components
@@ -41,7 +41,7 @@ user-management-system/
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd user-management-system
+   cd blog-management-system
    ```
 
 2. **Install dependencies**
@@ -55,7 +55,7 @@ user-management-system/
    ```env
    NODE_ENV=development
    PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/user-management
+   MONGODB_URI=mongodb://localhost:27017/blog-management
    JWT_SECRET=your-super-secret-jwt-key-here
    FRONTEND_URL=http://localhost:3000
    ```
