@@ -1,8 +1,10 @@
 "use client"
 
-import { useMemo, useRef, useEffect } from 'react'
+import { useMemo, useRef, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import 'react-quill/dist/quill.snow.css'
+import SimpleTextEditor from './SimpleTextEditor'
+import EditorErrorBoundary from './EditorErrorBoundary'
 
 interface RichTextEditorProps {
   value: string
@@ -12,7 +14,33 @@ interface RichTextEditorProps {
   height?: string
 }
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
+// Improved dynamic import with error handling
+const ReactQuill = dynamic(
+  () => import('react-quill').catch((error) => {
+    console.error('Failed to load react-quill:', error)
+    // Return a fallback component
+    return {
+      default: ({ value, onChange, placeholder, readOnly, ...props }: any) => (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          className="w-full p-3 border border-gray-300 rounded-md min-h-[200px] resize-vertical"
+          {...props}
+        />
+      )
+    }
+  }),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-full p-3 border border-gray-300 rounded-md min-h-[200px] flex items-center justify-center text-gray-500">
+        Loading editor...
+      </div>
+    )
+  }
+)
 
 export default function RichTextEditor({
   value,
@@ -22,6 +50,17 @@ export default function RichTextEditor({
   height = "400px"
 }: RichTextEditorProps) {
   const quillRef = useRef<any>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+
+  useEffect(() => {
+    // Set loaded state after component mounts
+    const timer = setTimeout(() => {
+      setIsLoaded(true)
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [])
 
   // No JS needed for dropdown toggle; handled by Quill via .ql-expanded / aria-expanded
 
@@ -59,8 +98,15 @@ export default function RichTextEditor({
 
 
   return (
-    <div className="rich-text-editor">
-      <style>{`
+    <EditorErrorBoundary
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      height={height}
+    >
+      <div className="rich-text-editor">
+        <style>{`
         .rich-text-editor .ql-toolbar {
           background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
           border: 1px solid #dee2e6;
@@ -419,16 +465,31 @@ export default function RichTextEditor({
         }
       `}</style>
       
-      <ReactQuill
-        theme="snow"
-        value={value}
-        onChange={handleChange}
-        modules={modules}
-        formats={formats}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        style={{ height: 'auto' }}
-      />
-    </div>
+      {loadError ? (
+        <SimpleTextEditor
+          value={value}
+          onChange={handleChange}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          height={height}
+        />
+      ) : (
+        <ReactQuill
+          theme="snow"
+          value={value}
+          onChange={handleChange}
+          modules={modules}
+          formats={formats}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          style={{ height: 'auto' }}
+          onError={(error) => {
+            console.error('ReactQuill error:', error)
+            setLoadError(true)
+          }}
+        />
+      )}
+      </div>
+    </EditorErrorBoundary>
   )
 }

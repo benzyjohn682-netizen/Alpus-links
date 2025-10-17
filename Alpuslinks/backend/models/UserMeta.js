@@ -6,35 +6,17 @@ const userMetaSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  phone: {
+  meta_property: {
     type: String,
+    required: true,
     trim: true,
-    validate: {
-      validator: function(v) {
-        return !v || /^[\+]?[\d\s\-\(\)]{7,20}$/.test(v);
-      },
-      message: 'Please enter a valid phone number'
-    }
+    enum: ['phone', 'location', 'bio', 'website', 'country', 'language', 'twitter', 'linkedin', 'github']
   },
-  location: {
+  meta_value: {
     type: String,
+    required: false,
     trim: true,
-    maxlength: [100, 'Location cannot exceed 100 characters']
-  },
-  bio: {
-    type: String,
-    trim: true,
-    maxlength: [500, 'Bio cannot exceed 500 characters']
-  },
-  website: {
-    type: String,
-    trim: true,
-    match: [/^https?:\/\/.+/, 'Please enter a valid website URL']
-  },
-  socialLinks: {
-    twitter: { type: String, trim: true },
-    linkedin: { type: String, trim: true },
-    github: { type: String, trim: true }
+    maxlength: [500, 'Meta value cannot exceed 500 characters']
   }
 }, {
   timestamps: true,
@@ -42,7 +24,10 @@ const userMetaSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Index for better query performance
-userMetaSchema.index({ userId: 1 }, { unique: true });
+// Index for better query performance - ensure unique constraint on userId + meta_property combination
+userMetaSchema.index({ userId: 1, meta_property: 1 }, { unique: true });
+
+// Remove any old conflicting indexes by ensuring clean schema
+userMetaSchema.index({ userId: 1 }); // Non-unique index for userId queries
 
 module.exports = mongoose.model('UserMeta', userMetaSchema);

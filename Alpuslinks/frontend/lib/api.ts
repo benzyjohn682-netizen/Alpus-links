@@ -212,6 +212,8 @@ class ApiService {
     location?: string
     bio?: string
     website?: string
+    country?: string
+    language?: string
     socialLinks?: {
       twitter?: string
       linkedin?: string
@@ -481,6 +483,14 @@ class ApiService {
     return this.request(`/users/login-trends?period=${period}`)
   }
 
+  async getOnlineUserStats() {
+    return this.request('/users/online-stats')
+  }
+
+  async getOnlineUserTrends(period: string = '30d') {
+    return this.request(`/users/online-trends?period=${period}`)
+  }
+
   // Posts endpoints
   async savePostDraft(postData: {
     title: string
@@ -592,6 +602,25 @@ class ApiService {
     return this.request('/auth/system-config', {
       method: 'PUT',
       body: JSON.stringify(configData),
+    })
+  }
+
+  // Domain verification methods
+  async verifyDomain(domain: string) {
+    return this.request('/domain-verification/verify', {
+      method: 'POST',
+      body: JSON.stringify({ domain }),
+    })
+  }
+
+  async getDomainVerificationCacheStats() {
+    return this.request('/domain-verification/cache-stats')
+  }
+
+  async clearDomainVerificationCache(domain?: string) {
+    return this.request('/domain-verification/cache', {
+      method: 'DELETE',
+      body: JSON.stringify({ domain }),
     })
   }
 }

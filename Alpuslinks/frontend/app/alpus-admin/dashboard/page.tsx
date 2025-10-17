@@ -21,6 +21,30 @@ interface LoginTrendsResponse {
   totalUsers: number
 }
 
+interface UserStatsResponse {
+  overview: {
+    total: number
+    active: number
+    inactive: number
+    suspended: number
+    recent: number
+    weekly: number
+    today: number
+    todayLoggedIn: number
+  }
+  roles: Array<{
+    _id: string
+    count: number
+  }>
+  monthlyGrowth: Array<{
+    _id: {
+      year: number
+      month: number
+    }
+    count: number
+  }>
+}
+
 export default function AdminDashboardPage() {
   const [loginData, setLoginData] = useState<LoginTrendData[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,29 +55,48 @@ export default function AdminDashboardPage() {
   })
 
   useEffect(() => {
-    loadLoginTrends('30d')
+    loadDashboardData('30d')
   }, [])
 
-  const loadLoginTrends = async (period: string = '30d') => {
+  const loadDashboardData = async (period: string = '30d') => {
     try {
       setLoading(true)
-      const response = await apiService.getUserLoginTrends(period)
-      const data = response.data as LoginTrendsResponse
-      setLoginData(data.data)
+      
+      // Load user statistics (total registered users)
+      const statsResponse = await apiService.getUserStats()
+      const statsData = statsResponse.data as UserStatsResponse
+      
+      // Load login trends for the chart
+      const trendsResponse = await apiService.getUserLoginTrends(period)
+      const trendsData = trendsResponse.data as LoginTrendsResponse
+      
+      setLoginData(trendsData.data)
+      
+      // Extract user counts by role from stats
+      const roleCounts = statsData.roles.reduce((acc: any, role: any) => {
+        const roleName = role._id.toLowerCase()
+        if (roleName.includes('advertiser')) {
+          acc.advertisers = role.count
+        } else if (roleName.includes('publisher')) {
+          acc.publishers = role.count
+        }
+        return acc
+      }, { advertisers: 0, publishers: 0 })
+      
       setSummary({
-        totalAdvertisers: data.totalAdvertisers,
-        totalPublishers: data.totalPublishers,
-        totalUsers: data.totalUsers
+        totalAdvertisers: roleCounts.advertisers,
+        totalPublishers: roleCounts.publishers,
+        totalUsers: statsData.overview.total
       })
     } catch (err) {
-      console.error('Failed to load login trends:', err)
+      console.error('Failed to load dashboard data:', err)
     } finally {
       setLoading(false)
     }
   }
 
   const handleTimeRangeChange = (timeRange: '7d' | '30d' | '90d') => {
-    loadLoginTrends(timeRange)
+    loadDashboardData(timeRange)
   }
 
   return (
@@ -74,7 +117,7 @@ export default function AdminDashboardPage() {
                   <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Registered Users</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.totalUsers}</p>
                 </div>
               </div>
@@ -86,7 +129,7 @@ export default function AdminDashboardPage() {
                   <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Advertisers</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Registered Advertisers</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.totalAdvertisers}</p>
                 </div>
               </div>
@@ -98,7 +141,7 @@ export default function AdminDashboardPage() {
                   <UserPlus className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Publishers</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Registered Publishers</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.totalPublishers}</p>
                 </div>
               </div>

@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const Post = require('../models/Post');
+const domainVerificationService = require('../services/domainVerificationService');
 
 // Create or update draft
 router.post('/draft', auth, [
@@ -20,12 +21,37 @@ router.post('/draft', auth, [
 
     // Extract slug from complete URL for uniqueness check
     let slug = 'untitled';
+    let domain = null;
     try {
       const urlObj = new URL(completeUrl.startsWith('http') ? completeUrl : `https://${completeUrl}`);
       slug = urlObj.pathname.replace(/^\//, '') || 'untitled';
+      domain = urlObj.hostname.replace('www.', '');
     } catch (e) {
       // If URL parsing fails, use the completeUrl as slug
       slug = completeUrl.replace(/^https?:\/\//, '').replace(/^[^\/]+\//, '') || 'untitled';
+    }
+
+    // Verify domain exists and is reachable
+    if (domain) {
+      console.log(`Verifying domain for post: ${domain}`);
+      try {
+        const verificationResult = await domainVerificationService.verifyDomain(domain);
+        
+        if (!verificationResult.isValid) {
+          return res.status(400).json({ 
+            message: `Domain verification failed: ${verificationResult.error}`,
+            details: verificationResult.details
+          });
+        }
+        
+        console.log(`Domain ${domain} verified successfully for post`);
+      } catch (verificationError) {
+        console.error('Domain verification error for post:', verificationError);
+        return res.status(400).json({ 
+          message: 'Domain verification failed. Please ensure the domain exists and is accessible.',
+          error: verificationError.message
+        });
+      }
     }
 
     const existing = await Post.findOne({ advertiserId, slug });

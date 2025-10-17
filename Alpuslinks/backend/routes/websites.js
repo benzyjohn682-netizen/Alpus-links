@@ -5,6 +5,7 @@ const Website = require('../models/Website');
 const WebsiteMeta = require('../models/WebsiteMeta');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const domainVerificationService = require('../services/domainVerificationService');
 
 // Get all websites for a publisher
 router.get('/publisher/:publisherId', auth, async (req, res) => {
@@ -351,6 +352,30 @@ router.post('/', auth, async (req, res) => {
         return res.status(400).json({ message: 'Invalid URL format' });
       }
     }
+
+    // Verify domain exists and is reachable
+    if (domain) {
+      console.log(`Verifying domain: ${domain}`);
+      try {
+        const verificationResult = await domainVerificationService.verifyDomain(domain);
+        
+        if (!verificationResult.isValid) {
+          return res.status(400).json({ 
+            message: `Domain verification failed: ${verificationResult.error}`,
+            details: verificationResult.details
+          });
+        }
+        
+        console.log(`Domain ${domain} verified successfully`);
+      } catch (verificationError) {
+        console.error('Domain verification error:', verificationError);
+        return res.status(400).json({ 
+          message: 'Domain verification failed. Please ensure the domain exists and is accessible.',
+          error: verificationError.message
+        });
+      }
+    }
+
 
     // Check for existing websites with the same domain
     if (domain) {

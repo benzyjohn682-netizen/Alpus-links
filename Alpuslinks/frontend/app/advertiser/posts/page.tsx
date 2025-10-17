@@ -26,6 +26,7 @@ interface Post {
   title: string
   slug: string
   domain: string
+  completeUrl: string
   description: string
   metaTitle: string
   metaDescription: string
@@ -49,6 +50,17 @@ export default function PostManagementPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [postToDelete, setPostToDelete] = useState<Post | null>(null)
+
+  // Helper function to extract domain from completeUrl
+  const getDomainFromUrl = (url: string): string => {
+    if (!url) return 'Not specified'
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`)
+      return urlObj.hostname.replace('www.', '')
+    } catch (e) {
+      return 'Invalid URL'
+    }
+  }
 
   // Fetch posts from API
   useEffect(() => {
@@ -104,9 +116,9 @@ export default function PostManagementPage() {
   }
 
   const filteredPosts = posts.filter(post => {
+    const domain = post.domain || getDomainFromUrl(post.completeUrl)
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        post.slug.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (post.domain && post.domain.toLowerCase().includes(searchTerm.toLowerCase()))
+                        domain.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || post.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -286,14 +298,8 @@ export default function PostManagementPage() {
                             </div>
                             <div className="flex items-center space-x-1">
                               <ExternalLink className="w-4 h-4" />
-                              <span className="truncate">Slug: {post.slug}</span>
+                              <span className="truncate">Domain: {post.domain || getDomainFromUrl(post.completeUrl)}</span>
                             </div>
-                            {post.domain && (
-                              <div className="flex items-center space-x-1">
-                                <ExternalLink className="w-4 h-4" />
-                                <span className="truncate">Domain: {post.domain}</span>
-                              </div>
-                            )}
                           </div>
 
                           {/* Description */}

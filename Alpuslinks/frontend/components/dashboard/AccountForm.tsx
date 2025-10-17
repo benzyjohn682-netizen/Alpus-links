@@ -12,6 +12,8 @@ export default function AccountForm() {
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [location, setLocation] = useState('')
+  const [country, setCountry] = useState('')
+  const [language, setLanguage] = useState('')
   const [avatar, setAvatar] = useState<string | null>(null)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -35,6 +37,8 @@ export default function AccountForm() {
       if (userMeta) {
         setPhone(userMeta.phone || '')
         setLocation(userMeta.location || '')
+        setCountry(userMeta.country || '')
+        setLanguage(userMeta.language || '')
       }
     } catch (err) {
       console.error('Failed to load user meta:', err)
@@ -101,11 +105,15 @@ export default function AccountForm() {
       console.log('Sending update data:', updateData)
       const userResponse = await apiService.updateUser(user.id, updateData)
       
-      // Update user meta (phone, location)
-      const metaResponse = await apiService.updateUserMeta({
+      // Update user meta (phone, location, country, language)
+      const metaData = {
         phone: phone.trim(),
-        location: location.trim()
-      })
+        location: location.trim(),
+        country: country.trim(),
+        language: language.trim()
+      }
+      console.log('Sending meta data:', metaData)
+      const metaResponse = await apiService.updateUserMeta(metaData)
       await refreshUser()
       
       // Clear password fields after successful update
@@ -156,6 +164,73 @@ export default function AccountForm() {
         <div>
           <label className="block text-sm mb-1">Location</label>
           <input className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" value={location} onChange={e => setLocation(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Country</label>
+          <select className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" value={country} onChange={e => setCountry(e.target.value)}>
+            <option value="">Select Country</option>
+            <option value="United States">United States</option>
+            <option value="Canada">Canada</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="Germany">Germany</option>
+            <option value="France">France</option>
+            <option value="Spain">Spain</option>
+            <option value="Italy">Italy</option>
+            <option value="Netherlands">Netherlands</option>
+            <option value="Australia">Australia</option>
+            <option value="Japan">Japan</option>
+            <option value="South Korea">South Korea</option>
+            <option value="China">China</option>
+            <option value="India">India</option>
+            <option value="Brazil">Brazil</option>
+            <option value="Mexico">Mexico</option>
+            <option value="Argentina">Argentina</option>
+            <option value="South Africa">South Africa</option>
+            <option value="Nigeria">Nigeria</option>
+            <option value="Egypt">Egypt</option>
+            <option value="Russia">Russia</option>
+            <option value="Turkey">Turkey</option>
+            <option value="Saudi Arabia">Saudi Arabia</option>
+            <option value="United Arab Emirates">United Arab Emirates</option>
+            <option value="Israel">Israel</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Language</label>
+          <select className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" value={language} onChange={e => setLanguage(e.target.value)}>
+            <option value="">Select Language</option>
+            <option value="English">English</option>
+            <option value="Spanish">Spanish</option>
+            <option value="French">French</option>
+            <option value="German">German</option>
+            <option value="Italian">Italian</option>
+            <option value="Portuguese">Portuguese</option>
+            <option value="Russian">Russian</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option>
+            <option value="Arabic">Arabic</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Dutch">Dutch</option>
+            <option value="Swedish">Swedish</option>
+            <option value="Norwegian">Norwegian</option>
+            <option value="Danish">Danish</option>
+            <option value="Finnish">Finnish</option>
+            <option value="Polish">Polish</option>
+            <option value="Czech">Czech</option>
+            <option value="Hungarian">Hungarian</option>
+            <option value="Romanian">Romanian</option>
+            <option value="Greek">Greek</option>
+            <option value="Turkish">Turkish</option>
+            <option value="Hebrew">Hebrew</option>
+            <option value="Thai">Thai</option>
+            <option value="Vietnamese">Vietnamese</option>
+            <option value="Indonesian">Indonesian</option>
+            <option value="Malay">Malay</option>
+            <option value="Tagalog">Tagalog</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
       </div>
 

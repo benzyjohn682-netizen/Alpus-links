@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { apiService } from '@/lib/api'
+import { domainVerificationService } from '@/lib/domainVerification'
 import { normalizeUrl } from '@/lib/utils'
 
 interface Website {
@@ -82,6 +83,16 @@ export function WebsiteForm({ website, onSubmit, onClose }: WebsiteFormProps) {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [domainVerification, setDomainVerification] = useState<{
+    isVerifying: boolean
+    isValid: boolean | null
+    error: string | null
+  }>({
+    isVerifying: false,
+    isValid: null,
+    error: null
+  })
+
 
   useEffect(() => {
     if (website) {
@@ -107,6 +118,10 @@ export function WebsiteForm({ website, onSubmit, onClose }: WebsiteFormProps) {
       newErrors.url = 'Website URL is required'
     } else if (!/^https?:\/\/.+/.test(formData.url)) {
       newErrors.url = 'Please enter a valid URL starting with http:// or https://'
+    } else if (domainVerification.isValid === false) {
+      newErrors.url = domainVerification.error || 'Domain verification failed'
+    } else if (domainVerification.isVerifying) {
+      newErrors.url = 'Please wait for domain verification to complete'
     }
 
     if (formData.categories.length === 0) {
@@ -172,7 +187,48 @@ export function WebsiteForm({ website, onSubmit, onClose }: WebsiteFormProps) {
         [field]: value
       }))
     }
+
+    // Verify domain when URL changes
+    if (field === 'url' && value) {
+      verifyDomain(value)
+    }
   }
+
+  const verifyDomain = async (url: string) => {
+    if (!url) {
+      setDomainVerification({ isVerifying: false, isValid: null, error: null })
+      return
+    }
+
+    setDomainVerification({ isVerifying: true, isValid: null, error: null })
+
+    try {
+      const cleanDomain = domainVerificationService.cleanDomain(url)
+      if (!cleanDomain) {
+        setDomainVerification({
+          isVerifying: false,
+          isValid: false,
+          error: 'Invalid domain format'
+        })
+        return
+      }
+
+      const result = await domainVerificationService.verifyDomain(cleanDomain)
+      
+      setDomainVerification({
+        isVerifying: false,
+        isValid: result.isValid,
+        error: result.isValid ? null : result.error || 'Domain verification failed'
+      })
+    } catch (error: any) {
+      setDomainVerification({
+        isVerifying: false,
+        isValid: false,
+        error: error.message || 'Domain verification failed'
+      })
+    }
+  }
+
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -212,6 +268,36 @@ export function WebsiteForm({ website, onSubmit, onClose }: WebsiteFormProps) {
                     } dark:bg-gray-700 dark:text-white`}
                     placeholder="https://example.com"
                   />
+                  
+                  {/* Domain Verification Status */}
+                  {formData.url && (
+                    <div className="mt-2">
+                      {domainVerification.isVerifying && (
+                        <div className="flex items-center text-blue-600 dark:text-blue-400">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                          <span className="text-sm">Verifying domain...</span>
+                        </div>
+                      )}
+                      
+                      {domainVerification.isValid === true && (
+                        <div className="flex items-center text-green-600 dark:text-green-400">
+                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm">Domain verified successfully</span>
+                        </div>
+                      )}
+                      
+                      {domainVerification.isValid === false && (
+                        <div className="flex items-center text-red-600 dark:text-red-400">
+                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm">{domainVerification.error}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {errors.url && <p className="text-red-500 text-sm mt-1">{errors.url}</p>}
                 </div>
 
@@ -363,6 +449,7 @@ export function WebsiteForm({ website, onSubmit, onClose }: WebsiteFormProps) {
           </form>
         </div>
       </div>
+
     </div>
   )
 }

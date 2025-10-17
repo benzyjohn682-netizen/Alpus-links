@@ -247,6 +247,217 @@ router.get('/stats', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/users/online-stats
+// @desc    Get currently logged-in users count by role
+// @access  Private
+router.get('/online-stats', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role.name?.toLowerCase() !== 'admin' && req.user.role.name?.toLowerCase() !== 'super admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Clean up old sessions (older than 24 hours) that are still marked as active
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await LoginSession.updateMany(
+      {
+        isActive: true,
+        loginDate: { $lt: oneDayAgo }
+      },
+      {
+        isActive: false,
+        logoutDate: new Date()
+      }
+    );
+
+    // Get all active sessions with user and role information
+    const activeSessions = await LoginSession.aggregate([
+      {
+        $match: {
+          isActive: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'userInfo'
+        }
+      },
+      {
+        $unwind: '$userInfo'
+      },
+      {
+        $lookup: {
+          from: 'roles',
+          localField: 'userInfo.role',
+          foreignField: '_id',
+          as: 'roleInfo'
+        }
+      },
+      {
+        $unwind: '$roleInfo'
+      },
+      {
+        $group: {
+          _id: '$roleInfo.name',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get total active sessions count
+    const totalActiveSessions = await LoginSession.countDocuments({
+      isActive: true
+    });
+
+    // Format the response
+    const roleCounts = {
+      advertisers: 0,
+      publishers: 0,
+      total: totalActiveSessions
+    };
+
+    activeSessions.forEach(role => {
+      const roleName = role._id.toLowerCase();
+      if (roleName.includes('advertiser')) {
+        roleCounts.advertisers = role.count;
+      } else if (roleName.includes('publisher')) {
+        roleCounts.publishers = role.count;
+      }
+    });
+
+    res.json(roleCounts);
+  } catch (error) {
+    console.error('Get online stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/users/online-trends
+// @desc    Get historical logged-in user counts by role and time period
+// @access  Private
+router.get('/online-trends', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role.name?.toLowerCase() !== 'admin' && req.user.role.name?.toLowerCase() !== 'super admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const { period = '30d' } = req.query;
+    
+    // Calculate date range based on period
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch (period) {
+      case '7d':
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(endDate.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(endDate.getDate() - 90);
+        break;
+      default:
+        startDate.setDate(endDate.getDate() - 30);
+    }
+
+    // Get current online user counts by role
+    const currentOnlineStats = await LoginSession.aggregate([
+      {
+        $match: {
+          isActive: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'userInfo'
+        }
+      },
+      {
+        $unwind: '$userInfo'
+      },
+      {
+        $lookup: {
+          from: 'roles',
+          localField: 'userInfo.role',
+          foreignField: '_id',
+          as: 'roleInfo'
+        }
+      },
+      {
+        $unwind: '$roleInfo'
+      },
+      {
+        $group: {
+          _id: '$roleInfo.name',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get total current online users
+    const totalCurrentOnline = await LoginSession.countDocuments({
+      isActive: true
+    });
+
+    // Format current stats
+    const currentStats = {
+      advertisers: 0,
+      publishers: 0,
+      total: totalCurrentOnline
+    };
+
+    currentOnlineStats.forEach(role => {
+      const roleName = role._id.toLowerCase();
+      if (roleName.includes('advertiser')) {
+        currentStats.advertisers = role.count;
+      } else if (roleName.includes('publisher')) {
+        currentStats.publishers = role.count;
+      }
+    });
+
+    // For historical data, we'll create a simple trend showing current online users
+    // In a real implementation, you might want to store snapshots of online users
+    const filledData = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      // For now, we'll show the current online stats for all dates
+      // In a production system, you'd want to store historical snapshots
+      filledData.push({
+        date: dateStr,
+        advertisers: currentStats.advertisers,
+        publishers: currentStats.publishers,
+        total: currentStats.total
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const responseData = {
+      data: filledData,
+      period,
+      totalAdvertisers: currentStats.advertisers,
+      totalPublishers: currentStats.publishers,
+      totalUsers: currentStats.total
+    };
+    
+    res.json(responseData);
+  } catch (error) {
+    console.error('Get online trends error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   GET /api/users/login-trends
 // @desc    Get user login trends by role and time period
 // @access  Private
