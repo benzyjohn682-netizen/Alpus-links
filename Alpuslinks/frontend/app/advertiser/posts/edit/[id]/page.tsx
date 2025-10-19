@@ -35,8 +35,7 @@ export default function EditPostPage() {
   })
   const [domainError, setDomainError] = useState('')
   const [anchorPairs, setAnchorPairs] = useState<AnchorPair[]>([])
-  const [newAnchorText, setNewAnchorText] = useState('')
-  const [newAnchorLink, setNewAnchorLink] = useState('')
+  const [extractedAnchorPairs, setExtractedAnchorPairs] = useState<AnchorPair[]>([])
   const [showFormatDropdown, setShowFormatDropdown] = useState(false)
   const [showFontSizeDropdown, setShowFontSizeDropdown] = useState(false)
   const [editorMode, setEditorMode] = useState<'visual' | 'html'>('visual')
@@ -184,28 +183,56 @@ export default function EditPostPage() {
       const error = validateDomain(value)
       setDomainError(error)
     }
+    
+    // Auto-extract anchor pairs when content changes
+    if (field === 'content') {
+      const extracted = extractAnchorPairsFromContent(value)
+      setExtractedAnchorPairs(extracted)
+    }
   }
 
-  const addAnchorPair = () => {
-    if (newAnchorText.trim() && newAnchorLink.trim()) {
-      const newPair: AnchorPair = {
-        id: Date.now().toString(),
-        text: newAnchorText.trim(),
-        link: newAnchorLink.trim()
+  // Function to extract anchor text and links from HTML content
+  const extractAnchorPairsFromContent = (content: string): AnchorPair[] => {
+    if (!content) return []
+    
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(content, 'text/html')
+    const links = doc.querySelectorAll('a[href]')
+    
+    const extractedPairs: AnchorPair[] = []
+    
+    links.forEach((link, index) => {
+      const href = link.getAttribute('href')
+      const text = link.textContent?.trim()
+      
+      if (href && text && href.startsWith('http')) {
+        extractedPairs.push({
+          id: `extracted-${Date.now()}-${index}`,
+          text: text,
+          link: href
+        })
       }
-      setAnchorPairs(prev => [...prev, newPair])
-      setNewAnchorText('')
-      setNewAnchorLink('')
-    }
+    })
+    
+    return extractedPairs
   }
 
   const removeAnchorPair = (id: string) => {
     setAnchorPairs(prev => prev.filter(pair => pair.id !== id))
+    setExtractedAnchorPairs(prev => prev.filter(pair => pair.id !== id))
   }
 
   const handleSaveDraft = async () => {
     try {
       setSaving(true)
+      
+      // Validate required fields before saving draft
+      if (!formData.domain.trim()) {
+        toast.error('Target Domain is required')
+        setSaving(false)
+        return
+      }
+      
       // Combine domain + slug into complete URL
       const completeUrl = formData.domain && formData.slug 
         ? `${formData.domain}/${formData.slug}`
@@ -219,7 +246,7 @@ export default function EditPostPage() {
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
         content: formData.content,
-        anchorPairs: anchorPairs.map(p => ({ text: p.text, link: p.link }))
+        anchorPairs: [...anchorPairs, ...extractedAnchorPairs].map(p => ({ text: p.text, link: p.link }))
       }
       console.log('Updating post with payload:', payload)
       await apiService.updatePost(postId, payload)
@@ -246,6 +273,10 @@ export default function EditPostPage() {
         toast.error('Title is required')
         return
       }
+      if (!formData.domain.trim()) {
+        toast.error('Target Domain is required')
+        return
+      }
       if (!completeUrl.trim()) {
         toast.error('Complete URL is required. Please enter both domain and slug.')
         return
@@ -263,7 +294,7 @@ export default function EditPostPage() {
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
         content: formData.content,
-        anchorPairs: anchorPairs.map(p => ({ text: p.text, link: p.link }))
+        anchorPairs: [...anchorPairs, ...extractedAnchorPairs].map(p => ({ text: p.text, link: p.link }))
       }
       
       console.log('Submitting post with payload:', payload)
@@ -517,7 +548,7 @@ export default function EditPostPage() {
 
   return (
     <ProtectedRoute allowedRoles={["advertiser"]}>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-10">
@@ -529,7 +560,7 @@ export default function EditPostPage() {
                 <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="flex-1">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                   Edit Post
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -571,7 +602,7 @@ export default function EditPostPage() {
                     {/* Article Title */}
                     <div className="mb-8">
                       <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
-                        <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full mr-4"></div>
+                        <div className="w-3 h-3 bg-green-500 rounded-full mr-4"></div>
                         Article Title *
                       </label>
                       <div className="relative group">
@@ -589,8 +620,9 @@ export default function EditPostPage() {
                     {/* Domain */}
                     <div className="mb-8">
                       <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
-                        <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full mr-4"></div>
+                        <div className="w-3 h-3 bg-purple-500 rounded-full mr-4"></div>
                         Target Domain *
+                        <span className="ml-2 text-red-500 text-sm font-normal">(Required)</span>
                       </label>
                       <div className="relative group">
                         <input
@@ -624,7 +656,7 @@ export default function EditPostPage() {
                     {/* URL Slug */}
                     <div className="mb-8">
                       <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
-                        <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mr-4"></div>
+                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-4"></div>
                         URL Slug *
                       </label>
                       <div className="relative group">
@@ -656,12 +688,12 @@ export default function EditPostPage() {
                     {/* Description Editor */}
                     <div className="mb-8">
                       <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
-                        <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full mr-4"></div>
+                        <div className="w-3 h-3 bg-cyan-500 rounded-full mr-4"></div>
                         Description *
                       </label>
                       <div className="border-2 border-gray-200 dark:border-gray-700 rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-xl hover:shadow-2xl transition-all duration-300">
                         {/* Editor Mode Tabs */}
-                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b border-gray-200 dark:border-gray-600 p-4">
+                        <div className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               {/* Editor Mode Tabs */}
@@ -670,7 +702,7 @@ export default function EditPostPage() {
                                   onClick={() => setEditorMode('visual')}
                                   className={`flex items-center space-x-3 px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${
                                     editorMode === 'visual' 
-                                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105' 
+                                      ? 'bg-blue-600 text-white shadow-lg transform scale-105' 
                                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
                                 >
@@ -681,7 +713,7 @@ export default function EditPostPage() {
                                   onClick={() => setEditorMode('html')}
                                   className={`flex items-center space-x-3 px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${
                                     editorMode === 'html' 
-                                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105' 
+                                      ? 'bg-blue-600 text-white shadow-lg transform scale-105' 
                                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                                   }`}
                                 >
@@ -749,7 +781,7 @@ export default function EditPostPage() {
                 <div className="space-y-8">
                   {/* Meta-tags Section */}
                   <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden hover:shadow-3xl transition-all duration-300">
-                    <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 px-4 py-3">
+                    <div className="bg-blue-600 px-4 py-3">
                       <h2 className="text-lg font-bold text-white flex items-center space-x-2">
                         <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
                           <span className="text-xs font-bold">M</span>
@@ -764,7 +796,7 @@ export default function EditPostPage() {
                     <div className="p-4 space-y-6">
                       <div>
                         <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
-                          <div className="w-3 h-3 bg-gradient-to-r from-orange-400 to-red-500 rounded-full mr-4"></div>
+                          <div className="w-3 h-3 bg-orange-500 rounded-full mr-4"></div>
                           Meta Title *
                         </label>
                         <div className="relative group">
@@ -781,7 +813,7 @@ export default function EditPostPage() {
 
                       <div>
                         <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
-                          <div className="w-3 h-3 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full mr-4"></div>
+                          <div className="w-3 h-3 bg-teal-500 rounded-full mr-4"></div>
                           Meta Description *
                         </label>
                         <div className="relative group">
@@ -800,7 +832,7 @@ export default function EditPostPage() {
 
                   {/* Keywords Section */}
                   <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/40 dark:border-gray-700/60 overflow-hidden hover:shadow-3xl transition-all duration-300">
-                    <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 px-4 py-3">
+                    <div className="bg-yellow-500 px-4 py-3">
                       <h2 className="text-lg font-bold text-white flex items-center space-x-2">
                         <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
                           <span className="text-xs font-bold">K</span>
@@ -810,7 +842,7 @@ export default function EditPostPage() {
                     </div>
                     <div className="p-4">
                       <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
-                        <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full mr-4"></div>
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full mr-4"></div>
                         Keywords *
                       </label>
                       <div className="relative group">
@@ -828,7 +860,7 @@ export default function EditPostPage() {
 
                   {/* Anchor Text-Link Pairs */}
                   <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/40 dark:border-gray-700/60 overflow-hidden hover:shadow-3xl transition-all duration-300">
-                    <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 px-4 py-3">
+                    <div className="bg-green-500 px-4 py-3">
                       <h2 className="text-lg font-bold text-white flex items-center space-x-2">
                         <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
                           <span className="text-xs font-bold">A</span>
@@ -838,52 +870,31 @@ export default function EditPostPage() {
                     </div>
                     
                     <div className="p-4 space-y-4">
-                      {/* Add new anchor pair */}
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                            <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full mr-3"></div>
-                            Anchor Text
-                          </label>
-                          <input
-                            type="text"
-                            value={newAnchorText}
-                            onChange={(e) => setNewAnchorText(e.target.value)}
-                            placeholder="Enter anchor text"
-                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 text-lg font-semibold"
-                          />
+                      {/* Auto-extracted anchor pairs info */}
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-xs text-white font-bold">ℹ</span>
+                          </div>
+                          <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200">
+                            Auto-Extracted Anchor Pairs
+                          </h4>
                         </div>
-                        <div>
-                          <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-                            <div className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full mr-3"></div>
-                            Anchor Link
-                          </label>
-                          <input
-                            type="url"
-                            value={newAnchorLink}
-                            onChange={(e) => setNewAnchorLink(e.target.value)}
-                            placeholder="Enter link URL"
-                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 text-lg font-semibold"
-                          />
-                        </div>
-                        <button
-                          onClick={addAnchorPair}
-                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105"
-                        >
-                          <Plus className="w-5 h-5" />
-                          <span>Add Anchor Pair</span>
-                        </button>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          Anchor text and links are automatically extracted from your content. 
+                          Add links in your content using the editor's link button or HTML &lt;a&gt; tags.
+                        </p>
                       </div>
 
-                      {/* Display existing anchor pairs */}
-                      {anchorPairs.length > 0 && (
+                      {/* Display extracted anchor pairs */}
+                      {extractedAnchorPairs.length > 0 ? (
                         <div className="space-y-4">
                           <h4 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center">
-                            <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full mr-3"></div>
-                            Added Pairs:
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                            Extracted Pairs ({extractedAnchorPairs.length}):
                           </h4>
-                          {anchorPairs.map((pair) => (
-                            <div key={pair.id} className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-lg hover:shadow-xl transition-all duration-300">
+                          {extractedAnchorPairs.map((pair) => (
+                            <div key={pair.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-lg hover:shadow-xl transition-all duration-300">
                               <div className="flex-1 min-w-0">
                                 <div className="text-lg font-semibold text-gray-900 dark:text-white truncate mb-1">
                                   {pair.text}
@@ -895,11 +906,24 @@ export default function EditPostPage() {
                               <button
                                 onClick={() => removeAnchorPair(pair.id)}
                                 className="ml-4 p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
+                                title="Remove this anchor pair"
                               >
                                 <Unlink className="w-5 h-5" />
                               </button>
                             </div>
                           ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Link className="w-8 h-8 text-gray-400" />
+                          </div>
+                          <h4 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                            No Links Found
+                          </h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-500">
+                            Add links to your content using the editor's link button or HTML &lt;a&gt; tags to see them here.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -911,7 +935,7 @@ export default function EditPostPage() {
                       <button
                         onClick={handleSaveDraft}
                         disabled={saving}
-                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+                        className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
                       >
                         <Save className="w-5 h-5" />
                         <span>{saving ? 'Saving...' : 'Update Post'}</span>
@@ -919,7 +943,7 @@ export default function EditPostPage() {
                       <button
                         onClick={handleSendToModeration}
                         disabled={saving}
-                        className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+                        className="w-full bg-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
                       >
                         <Send className="w-5 h-5" />
                         <span>Submit for Moderation</span>

@@ -172,16 +172,16 @@ export default function PostManagementPage() {
 
   return (
     <ProtectedRoute allowedRoles={["advertiser"]}>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg">
+              <div className="p-3 bg-blue-600 rounded-xl shadow-lg">
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                   Post Management
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -191,7 +191,7 @@ export default function PostManagementPage() {
             </div>
             <button
               onClick={handleCreatePost}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
             >
               <Plus className="w-5 h-5" />
               <span>Create New Post</span>
@@ -253,7 +253,7 @@ export default function PostManagementPage() {
             </div>
           ) : sortedPosts.length === 0 ? (
             <div className="text-center py-20">
-              <div className="mx-auto w-24 h-24 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mb-6">
+              <div className="mx-auto w-24 h-24 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
                 <FileText className="w-12 h-12 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No posts found</h3>
@@ -265,7 +265,7 @@ export default function PostManagementPage() {
               </p>
               <button
                 onClick={handleCreatePost}
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
               >
                 <Plus className="w-5 h-5" />
                 <span>Create Your First Post</span>
@@ -280,7 +280,7 @@ export default function PostManagementPage() {
                       <div className="flex items-start space-x-4 flex-1 min-w-0">
                         {/* Post Icon */}
                         <div className="flex-shrink-0">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center shadow-md">
+                          <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shadow-md">
                             <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                           </div>
                         </div>
