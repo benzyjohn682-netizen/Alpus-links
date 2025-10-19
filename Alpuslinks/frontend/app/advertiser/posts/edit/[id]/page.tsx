@@ -98,6 +98,12 @@ export default function EditPostPage() {
           link: pair.link || ''
         })) : [])
         
+        // Extract anchor pairs from existing content
+        if (p.content) {
+          const extracted = extractAnchorPairsFromContent(p.content)
+          setExtractedAnchorPairs(extracted)
+        }
+        
         updateWordCount(p.content || '')
         setInitialLoadComplete(true)
       } catch (e: any) {

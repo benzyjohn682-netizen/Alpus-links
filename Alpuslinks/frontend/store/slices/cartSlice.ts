@@ -21,7 +21,7 @@ const initialState: CartState = {
 }
 
 function makeId(websiteId: string, type: OrderType) {
-  return `${websiteId}-${type}`
+  return `${websiteId}-${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
 const cartSlice = createSlice({
@@ -32,20 +32,14 @@ const cartSlice = createSlice({
       const { websiteId, type, domain, price } = action.payload
       const quantity = action.payload.quantity ?? 1
       const id = makeId(websiteId, type)
-      const existing = state.items.find(i => i.id === id)
-      if (existing) {
-        existing.quantity += quantity
-      } else {
-        state.items.push({ id, websiteId, type, domain, price, quantity })
-      }
+      // Always create a new independent order
+      state.items.push({ id, websiteId, type, domain, price, quantity })
     },
-    removeItem: (state, action: PayloadAction<{ websiteId: string; type: OrderType }>) => {
-      const id = makeId(action.payload.websiteId, action.payload.type)
-      state.items = state.items.filter(i => i.id !== id)
+    removeItem: (state, action: PayloadAction<{ id: string }>) => {
+      state.items = state.items.filter(i => i.id !== action.payload.id)
     },
-    updateQuantity: (state, action: PayloadAction<{ websiteId: string; type: OrderType; quantity: number }>) => {
-      const id = makeId(action.payload.websiteId, action.payload.type)
-      const item = state.items.find(i => i.id === id)
+    updateQuantity: (state, action: PayloadAction<{ id: string; quantity: number }>) => {
+      const item = state.items.find(i => i.id === action.payload.id)
       if (!item) return
       item.quantity = Math.max(1, action.payload.quantity)
     },
