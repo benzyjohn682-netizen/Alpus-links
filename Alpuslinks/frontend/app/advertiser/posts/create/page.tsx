@@ -809,23 +809,6 @@ export default function CreatePostPage() {
                   </div>
                   
                   <div className="p-4 space-y-4">
-                    {/* Auto-extracted anchor pairs info */}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-xs text-white font-bold">ℹ</span>
-                        </div>
-                        <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200">
-                          Auto-Extracted Anchor Pairs
-                        </h4>
-                      </div>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        Anchor text and links are automatically extracted from your content. 
-                        Add links in your content using the editor's link button or HTML &lt;a&gt; tags.
-                      </p>
-                    </div>
-
-                    {/* Display extracted anchor pairs */}
                     {extractedAnchorPairs.length > 0 ? (
                       <div className="space-y-4">
                         <h4 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center">
@@ -860,9 +843,6 @@ export default function CreatePostPage() {
                         <h4 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
                           No Links Found
                         </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-500">
-                          Add links to your content using the editor's link button or HTML &lt;a&gt; tags to see them here.
-                        </p>
                       </div>
                     )}
                   </div>
