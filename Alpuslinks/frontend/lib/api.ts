@@ -623,6 +623,72 @@ class ApiService {
       body: JSON.stringify({ domain }),
     })
   }
+
+  // Link Insertion methods
+  async createLinkInsertion(linkInsertionData: {
+    postUrl: string
+    anchorText: string
+    anchorUrl: string
+    currentText: string
+    fixedText: string
+    addingText: string
+    status?: 'draft' | 'pending' | 'approved' | 'rejected'
+  }) {
+    return this.request('/link-insertions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(linkInsertionData),
+    })
+  }
+
+  async getLinkInsertions(filters: {
+    search?: string
+    status?: string
+    sortBy?: string
+    sortOrder?: string
+    page?: number
+    limit?: number
+  } = {}) {
+    const params = new URLSearchParams()
+    if (filters.search) params.append('search', filters.search)
+    if (filters.status) params.append('status', filters.status)
+    if (filters.sortBy) params.append('sortBy', filters.sortBy)
+    if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    
+    return this.request(`/link-insertions?${params.toString()}`)
+  }
+
+  async getLinkInsertion(linkInsertionId: string) {
+    return this.request(`/link-insertions/${linkInsertionId}`)
+  }
+
+  async updateLinkInsertion(linkInsertionId: string, linkInsertionData: {
+    postUrl: string
+    anchorText: string
+    anchorUrl: string
+    currentText: string
+    fixedText: string
+    addingText: string
+    status?: 'draft' | 'pending' | 'approved' | 'rejected'
+  }) {
+    return this.request(`/link-insertions/${linkInsertionId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(linkInsertionData),
+    })
+  }
+
+  async deleteLinkInsertion(linkInsertionId: string) {
+    return this.request(`/link-insertions/${linkInsertionId}`, {
+      method: 'DELETE',
+    })
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL)

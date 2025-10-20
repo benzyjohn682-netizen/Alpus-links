@@ -58,8 +58,8 @@ export default function CreatePostPage() {
         search: searchTerm
       })
       
-      if (response.data?.websites) {
-        setWebsites(response.data.websites)
+      if ((response.data as any)?.websites) {
+        setWebsites((response.data as any).websites)
       }
     } catch (error) {
       console.error('Error fetching websites:', error)
@@ -128,10 +128,10 @@ export default function CreatePostPage() {
   const formatSlugForBackend = (slug: string): string => {
     return slug
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '') // Only allow lowercase letters, numbers, and hyphens
+      .replace(/[^a-z0-9-]/g, '-') // Replace invalid chars with hyphens
       .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
       .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-      .trim() || 'untitled'
+      .trim() || ''
   }
 
   // Domain validation function
@@ -571,10 +571,10 @@ export default function CreatePostPage() {
                 <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="flex-1">
-                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                   Create New Post
                 </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
+                <p className="text-gray-600 dark:text-gray-400">
                   Create and publish your guest post with professional editing tools
                 </p>
               </div>
@@ -627,7 +627,6 @@ export default function CreatePostPage() {
                     <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
                       <div className="w-3 h-3 bg-purple-500 rounded-full mr-4"></div>
                       Target Domain *
-                      <span className="ml-2 text-red-500 text-sm font-normal">(Required)</span>
                     </label>
                     <div className="relative group">
                       {isDomainFromCart ? (
@@ -653,9 +652,12 @@ export default function CreatePostPage() {
                                 setShowDomainDropdown(true)
                               }}
                               onFocus={() => setShowDomainDropdown(true)}
-                              onBlur={() => {
-                                // Delay closing to allow click on dropdown items
-                                setTimeout(() => setShowDomainDropdown(false), 200)
+                              onBlur={(e) => {
+                                // Only close if the blur is not caused by clicking on dropdown items
+                                const relatedTarget = e.relatedTarget as HTMLElement
+                                if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
+                                  setTimeout(() => setShowDomainDropdown(false), 150)
+                                }
                               }}
                               placeholder="Select a domain..."
                               className={`w-full px-4 py-3 pr-10 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-mono ${
@@ -675,7 +677,7 @@ export default function CreatePostPage() {
                           
                           {/* Dropdown Select */}
                           {showDomainDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
+                            <div data-domain-dropdown className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
                               {loadingWebsites ? (
                                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
@@ -688,17 +690,24 @@ export default function CreatePostPage() {
                                     <button
                                       key={website._id}
                                       type="button"
-                                      onClick={() => {
+                                      onMouseDown={(e) => {
+                                        // Handle before input blur so value sticks
+                                        e.preventDefault()
+                                        e.stopPropagation()
                                         console.log('🔍 Selecting domain:', domain)
                                         console.log('🔍 Current formData.domain before:', formData.domain)
                                         
+                                        // Update form data with the selected domain
                                         setFormData(prev => {
                                           const newData = { ...prev, domain }
                                           console.log('🔍 New formData:', newData)
                                           return newData
                                         })
                                         
+                                        // Update search term to match the selected domain
                                         setDomainSearchTerm(domain)
+                                        
+                                        // Close dropdown and clear any errors
                                         setShowDomainDropdown(false)
                                         setDomainError('')
                                         
@@ -747,36 +756,21 @@ export default function CreatePostPage() {
                     )}
                   </div>
 
-                  {/* URL Slug */}
+                  {/* URL (Slug hidden, derived from title) */}
                   <div className="mb-8">
                     <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
                       <div className="w-3 h-3 bg-blue-500 rounded-full mr-4"></div>
-                      URL Slug *
+                      URL (auto-generated)
                     </label>
-                    <div className="relative group">
-                      <input
-                        type="text"
-                        value={formData.slug}
-                        onChange={(e) => {
-                          const slug = e.target.value
-                          handleInputChange('slug', slug)
-                        }}
-                        placeholder="your-article-slug"
-                        className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 text-lg font-mono"
-                      />
-                      <span className="absolute right-4 top-4 text-sm text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium">{formData.slug.length}</span>
-                    </div>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      Auto-generated from title. Only lowercase letters, numbers, and hyphens allowed.
+                    <p className="mt-0 text-sm text-gray-500 dark:text-gray-400">
+                      We automatically generate the URL from your title. You don't need to enter a slug.
                     </p>
-                    {formData.domain && formData.slug && (
-                      <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Complete URL Preview:</p>
-                        <p className="text-lg font-mono text-gray-900 dark:text-white">
-                          {formData.domain}/{formData.slug}
-                        </p>
-                      </div>
-                    )}
+                    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Complete URL Preview:</p>
+                      <p className="text-lg font-mono text-gray-900 dark:text-white">
+                        {formData.domain || 'your-domain.com'}/{formatSlugForBackend(formData.title) || 'your-slug'}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Description Editor */}

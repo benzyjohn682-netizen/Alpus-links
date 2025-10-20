@@ -98,6 +98,7 @@ app.use('/api/roles', require('./routes/roles'));
 app.use('/api/user-meta', require('./routes/userMeta'));
 app.use('/api/websites', require('./routes/websites'));
 app.use('/api/posts', require('./routes/posts'));
+app.use('/api/link-insertions', require('./routes/linkInsertions'));
 app.use('/api/domain-verification', require('./routes/domainVerification'));
 
 // Health check endpoint

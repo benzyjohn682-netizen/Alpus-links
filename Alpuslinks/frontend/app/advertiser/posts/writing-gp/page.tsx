@@ -1,0 +1,271 @@
+"use client"
+
+import { ProtectedRoute } from '@/components/auth/protected-route'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft, Save, Send, ChevronDown, Search } from 'lucide-react'
+import { apiService } from '@/lib/api'
+import toast from 'react-hot-toast'
+
+interface WritingGPForm {
+  title: string
+  domain: string
+  description: string
+  content: string
+  metaTitle?: string
+  metaDescription?: string
+  keywords?: string
+}
+
+export default function WritingGPPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState<WritingGPForm>({
+    title: '',
+    domain: '',
+    description: '',
+    content: ''
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [websites, setWebsites] = useState<any[]>([])
+  const [loadingWebsites, setLoadingWebsites] = useState(false)
+  const [showDomainDropdown, setShowDomainDropdown] = useState(false)
+  const [domainSearchTerm, setDomainSearchTerm] = useState('')
+  const [domainError, setDomainError] = useState('')
+
+  // Load advertiser websites for domain dropdown
+  useEffect(() => {
+    const loadWebsites = async () => {
+      try {
+        setLoadingWebsites(true)
+        const response = await apiService.getAdvertiserWebsites({ page: 1, limit: 100, search: domainSearchTerm })
+        if ((response.data as any)?.websites) setWebsites((response.data as any).websites)
+      } catch (e) {
+        console.error('Failed to load websites', e)
+        toast.error('Failed to load websites')
+      } finally {
+        setLoadingWebsites(false)
+      }
+    }
+    loadWebsites()
+  }, [domainSearchTerm])
+
+  const filteredWebsites = websites.filter((website) => {
+    if (!domainSearchTerm.trim()) return true
+    return website.domain?.toLowerCase().includes(domainSearchTerm.toLowerCase()) ||
+           website.url?.toLowerCase().includes(domainSearchTerm.toLowerCase())
+  })
+
+  const validateDomain = (domain: string): string => {
+    if (!domain) return 'Target Domain is required'
+    try {
+      const testUrl = domain.startsWith('http') ? domain : `https://${domain}`
+      new URL(testUrl)
+      return ''
+    } catch {
+      return 'Please enter a valid domain (e.g., https://example.com or example.com)'
+    }
+  }
+
+  const validate = () => {
+    const e: Record<string, string> = {}
+    if (!formData.title.trim()) e.title = 'Title is required'
+    if (!formData.domain.trim()) e.domain = 'Target Domain is required'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const setField = (key: keyof WritingGPForm, value: any) => {
+    setFormData(prev => ({ ...prev, [key]: value }))
+  }
+
+  const formatSlugForBackend = (text: string): string => {
+    const base = (text || 'untitled')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .trim() || 'untitled'
+    return base
+  }
+
+  const buildCompleteUrl = (): string => {
+    const domain = formData.domain
+    const slug = formatSlugForBackend(formData.title)
+    if (domain && slug) return `${domain}/${slug}`
+    return domain || ''
+  }
+
+  const saveDraft = async () => {
+    if (!validate()) return toast.error('Please fix errors')
+    try {
+      setSaving(true)
+      const isFromCart = searchParams.get('from') === 'cart'
+      await apiService.savePostDraft({
+        title: formData.title,
+        completeUrl: buildCompleteUrl(),
+        description: formData.description,
+        content: formData.content,
+        metaTitle: formData.metaTitle,
+        metaDescription: isFromCart ? 'cart-created' : formData.metaDescription,
+        keywords: isFromCart ? 'cart-created' : formData.keywords,
+        anchorPairs: []
+      })
+      toast.success('Draft saved')
+      router.push('/advertiser/posts')
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e?.message || 'Failed to save draft')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const submit = async () => {
+    if (!validate()) return toast.error('Please fix errors')
+    try {
+      setSaving(true)
+      const isFromCart = searchParams.get('from') === 'cart'
+      await apiService.submitPost({
+        title: formData.title,
+        completeUrl: buildCompleteUrl(),
+        description: formData.description,
+        content: formData.content,
+        metaTitle: formData.metaTitle,
+        metaDescription: isFromCart ? 'cart-created' : formData.metaDescription,
+        keywords: isFromCart ? 'cart-created' : formData.keywords,
+        anchorPairs: []
+      })
+      toast.success('Submitted for review')
+      router.push('/advertiser/posts')
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e?.message || 'Failed to submit')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <ProtectedRoute allowedRoles={["advertiser"]}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center space-x-3 mb-8">
+            <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Writing + GP</h1>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+              <input value={formData.title} onChange={e => setField('title', e.target.value)} className={`w-full px-3 py-2 rounded-xl border ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white`} />
+              {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title}</p>}
+            </div>
+
+            {/* Target Domain (same UX as Create Post) */}
+            <div>
+              <label className="block text-sm font_medium text-gray-700 dark:text-gray-300 mb-2">Target Domain</label>
+              <div className="relative">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.domain}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setField('domain', value)
+                      setDomainSearchTerm(value)
+                      setShowDomainDropdown(true)
+                      setDomainError(validateDomain(value))
+                    }}
+                    onFocus={() => setShowDomainDropdown(true)}
+                    onBlur={(e) => {
+                      const relatedTarget = e.relatedTarget as HTMLElement
+                      if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
+                        setTimeout(() => setShowDomainDropdown(false), 150)
+                      }
+                    }}
+                    placeholder="Select a domain..."
+                    className={`w-full px-3 py-2 pr-10 rounded-xl border ${domainError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDomainDropdown(!showDomainDropdown)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                  >
+                    <ChevronDown className={`w-5 h-5 transition-transform ${showDomainDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {showDomainDropdown && (
+                  <div data-domain-dropdown className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                    {loadingWebsites ? (
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
+                        <p className="mt-2">Loading domains...</p>
+                      </div>
+                    ) : filteredWebsites.length > 0 ? (
+                      filteredWebsites.map((website) => {
+                        const domain = website.domain || new URL(website.url).hostname.replace('www.', '')
+                        return (
+                          <button
+                            key={website._id}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setFormData(prev => ({ ...prev, domain }))
+                              setDomainSearchTerm(domain)
+                              setShowDomainDropdown(false)
+                              setDomainError('')
+                            }}
+                            className={`w-full px-4 py-3 text-left hover:bg-purple-50 dark:hover:bg-purple-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${formData.domain === domain ? 'bg-purple-100 dark:bg-purple-900/30' : ''}`}
+                          >
+                            <div className="font-medium text-gray-900 dark:text-white">{domain}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{website.url}</div>
+                          </button>
+                        )
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                        <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                        <p>No domains found</p>
+                        <p className="text-xs mt-1">Try a different search term</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {domainError && <p className="text-sm text-red-600 mt-1">{domainError}</p>}
+            </div>
+
+            {/* URL preview removed as requested */}
+
+            {/* Brief removed as requested */}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Content Notes (optional)</label>
+              <textarea value={formData.content} onChange={e => setField('content', e.target.value)} rows={8} className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={saveDraft} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Saving...' : 'Save Draft'}</span>
+              </button>
+              <button onClick={submit} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                <Send className="w-4 h-4" />
+                <span>{saving ? 'Submitting...' : 'Submit for Review'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ProtectedRoute>
+  )
+}
+
+

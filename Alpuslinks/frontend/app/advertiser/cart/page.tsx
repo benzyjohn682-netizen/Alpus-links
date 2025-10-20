@@ -26,6 +26,16 @@ export default function AdvertiserCartPage() {
     router.push(`/advertiser/posts/create?domain=${encodeURIComponent(domain)}`)
   }
 
+  const handleAddLI = (websiteId: string, domain: string, price: number) => {
+    // Navigate to create link insertion page
+    router.push('/advertiser/posts/link-insertion/create')
+  }
+
+  const handleAddWritingGP = (websiteId: string, domain: string, price: number) => {
+    // Navigate to create writing + GP page with cart flag
+    router.push('/advertiser/posts/writing-gp?from=cart')
+  }
+
   return (
     <ProtectedRoute allowedRoles={["advertiser"]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -147,7 +157,7 @@ export default function AdvertiserCartPage() {
                                 )}
                                 {item.type === 'linkInsertion' && (
                                   <button
-                                    onClick={() => handleAddService(item.websiteId, item.domain, 'linkInsertion', item.price)}
+                                    onClick={() => handleAddLI(item.websiteId, item.domain, item.price)}
                                     className="flex items-center space-x-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors"
                                   >
                                     <Plus className="w-3 h-3" />
@@ -156,7 +166,7 @@ export default function AdvertiserCartPage() {
                                 )}
                                 {item.type === 'writingGuestPost' && (
                                   <button
-                                    onClick={() => handleAddService(item.websiteId, item.domain, 'writingGuestPost', item.price)}
+                                    onClick={() => handleAddWritingGP(item.websiteId, item.domain, item.price)}
                                     className="flex items-center space-x-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
                                   >
                                     <Plus className="w-3 h-3" />

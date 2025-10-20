@@ -24,15 +24,28 @@ router.post('/draft', auth, [
     let domain = null;
     try {
       const urlObj = new URL(completeUrl.startsWith('http') ? completeUrl : `https://${completeUrl}`);
-      slug = urlObj.pathname.replace(/^\//, '') || 'untitled';
+      const rawSlug = urlObj.pathname.replace(/^\//, '') || 'untitled';
+      // Sanitize slug to only contain lowercase letters, numbers, and hyphens
+      slug = rawSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')  // Replace invalid chars with hyphens
+        .replace(/-+/g, '-')           // Replace multiple hyphens with single hyphen
+        .replace(/^-+|-+$/g, '')      // Remove leading/trailing hyphens
+        || 'untitled';
       domain = urlObj.hostname.replace('www.', '');
     } catch (e) {
       // If URL parsing fails, use the completeUrl as slug
-      slug = completeUrl.replace(/^https?:\/\//, '').replace(/^[^\/]+\//, '') || 'untitled';
+      const rawSlug = completeUrl.replace(/^https?:\/\//, '').replace(/^[^\/]+\//, '') || 'untitled';
+      slug = rawSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        || 'untitled';
     }
 
-    // Verify domain exists and is reachable
-    if (domain) {
+    // Verify domain exists and is reachable (skip for link insertions)
+    if (domain && title !== 'Link Insertion Request') {
       console.log(`Verifying domain for post: ${domain}`);
       try {
         const verificationResult = await domainVerificationService.verifyDomain(domain);
@@ -94,7 +107,7 @@ router.post('/draft', auth, [
 router.post('/submit', auth, [
   body('title').trim().notEmpty().withMessage('Title is required'),
   body('completeUrl').trim().notEmpty().withMessage('Complete URL is required'),
-  body('content').trim().notEmpty().withMessage('Content is required'),
+  body('content').optional().trim(),
 ], async (req, res) => {
   try {
     console.log('Submit request body:', req.body);
@@ -107,14 +120,59 @@ router.post('/submit', auth, [
     const advertiserId = req.user._id;
     const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs } = req.body;
 
-    // Extract slug from complete URL for uniqueness check
+    // Custom validation: content is required for non-link-insertion posts
+    if (title !== 'Link Insertion Request' && (!content || content.trim() === '')) {
+      return res.status(400).json({ 
+        errors: [{ msg: 'Content is required for this type of post', param: 'content' }] 
+      });
+    }
+
+    // Extract slug and domain from complete URL for uniqueness check
     let slug = 'untitled';
+    let domain = null;
     try {
       const urlObj = new URL(completeUrl.startsWith('http') ? completeUrl : `https://${completeUrl}`);
-      slug = urlObj.pathname.replace(/^\//, '') || 'untitled';
+      const rawSlug = urlObj.pathname.replace(/^\//, '') || 'untitled';
+      // Sanitize slug to only contain lowercase letters, numbers, and hyphens
+      slug = rawSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')  // Replace invalid chars with hyphens
+        .replace(/-+/g, '-')           // Replace multiple hyphens with single hyphen
+        .replace(/^-+|-+$/g, '')      // Remove leading/trailing hyphens
+        || 'untitled';
+      domain = urlObj.hostname.replace('www.', '');
     } catch (e) {
       // If URL parsing fails, use the completeUrl as slug
-      slug = completeUrl.replace(/^https?:\/\//, '').replace(/^[^\/]+\//, '') || 'untitled';
+      const rawSlug = completeUrl.replace(/^https?:\/\//, '').replace(/^[^\/]+\//, '') || 'untitled';
+      slug = rawSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        || 'untitled';
+    }
+
+    // Skip domain verification for link insertions
+    if (title !== 'Link Insertion Request' && domain) {
+      console.log(`Verifying domain for submission: ${domain}`);
+      try {
+        const verificationResult = await domainVerificationService.verifyDomain(domain);
+        
+        if (!verificationResult.isValid) {
+          return res.status(400).json({ 
+            message: `Domain verification failed: ${verificationResult.error}`,
+            details: verificationResult.details
+          });
+        }
+        
+        console.log(`Domain ${domain} verified successfully for submission`);
+      } catch (verificationError) {
+        console.error('Domain verification error for submission:', verificationError);
+        return res.status(400).json({ 
+          message: 'Domain verification failed. Please ensure the domain exists and is accessible.',
+          error: verificationError.message
+        });
+      }
     }
 
     let post = await Post.findOne({ advertiserId, slug });
@@ -192,10 +250,23 @@ router.put('/:id', auth, [
     let slug = 'untitled';
     try {
       const urlObj = new URL(completeUrl.startsWith('http') ? completeUrl : `https://${completeUrl}`);
-      slug = urlObj.pathname.replace(/^\//, '') || 'untitled';
+      const rawSlug = urlObj.pathname.replace(/^\//, '') || 'untitled';
+      // Sanitize slug to only contain lowercase letters, numbers, and hyphens
+      slug = rawSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')  // Replace invalid chars with hyphens
+        .replace(/-+/g, '-')           // Replace multiple hyphens with single hyphen
+        .replace(/^-+|-+$/g, '')      // Remove leading/trailing hyphens
+        || 'untitled';
     } catch (e) {
       // If URL parsing fails, use the completeUrl as slug
-      slug = completeUrl.replace(/^https?:\/\//, '').replace(/^[^\/]+\//, '') || 'untitled';
+      const rawSlug = completeUrl.replace(/^https?:\/\//, '').replace(/^[^\/]+\//, '') || 'untitled';
+      slug = rawSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        || 'untitled';
     }
 
     post.title = title;

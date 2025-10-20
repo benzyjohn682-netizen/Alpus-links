@@ -140,8 +140,39 @@ export default function PostManagementPage() {
     router.push('/advertiser/posts/create')
   }
 
-  const handleEditPost = (postId: string) => {
-    router.push(`/advertiser/posts/edit/${postId}`)
+  const handleCreateLinkInsertion = () => {
+    router.push('/advertiser/posts/link-insertion/create')
+  }
+
+  const handleWritingGP = () => {
+    router.push('/advertiser/posts/writing-gp')
+  }
+
+  const handleEditPost = (post: Post) => {
+    // Determine the correct edit route based on post type
+    // Check if it's a Writing + GP post by looking for specific patterns
+    const isWritingGP = post.title === 'Writing + GP' || 
+                       post.title.includes('Writing') || 
+                       post.title.includes('GP') ||
+                       post.title === 'ad' || // Based on your current post
+                       post.title.length <= 3 || // Short titles are likely Writing + GP
+                       (!post.anchorPairs || post.anchorPairs.length === 0) // No anchor pairs suggests Writing + GP
+    
+    // Check if it's a Link Insertion post
+    const isLinkInsertion = post.title === 'Link Insertion Request' || 
+                           post.title.includes('Link Insertion') ||
+                           (post.anchorPairs && post.anchorPairs.length > 0) // Has anchor pairs suggests Link Insertion
+    
+    if (isWritingGP) {
+      router.push(`/advertiser/posts/writing-gp/edit/${post._id}`)
+    } 
+    else if (isLinkInsertion) {
+      router.push(`/advertiser/posts/link-insertion/edit/${post._id}`)
+    }
+    // Regular posts go to the standard edit page
+    else {
+      router.push(`/advertiser/posts/edit/${post._id}`)
+    }
   }
 
 
@@ -189,13 +220,29 @@ export default function PostManagementPage() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleCreatePost}
-              className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Create New Post</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleCreatePost}
+                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Create New Post</span>
+              </button>
+              <button
+                onClick={handleCreateLinkInsertion}
+                className="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Create Link Insertion</span>
+              </button>
+              <button
+                onClick={handleWritingGP}
+                className="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Writing + GP</span>
+              </button>
+            </div>
           </div>
 
           {/* Filters and Search */}
@@ -359,7 +406,7 @@ export default function PostManagementPage() {
                           <span className="ml-1 capitalize">{post.status}</span>
                         </span>
                         <button
-                          onClick={() => handleEditPost(post._id)}
+                          onClick={() => handleEditPost(post)}
                           className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
                           title="Edit Post"
                         >

@@ -142,9 +142,7 @@ router.get('/advertiser/websites', auth, async (req, res) => {
     if (search) {
       query.$or = [
         { domain: { $regex: search, $options: 'i' } },
-        { url: { $regex: search, $options: 'i' } },
-,
-        { domain: { $regex: search, $options: 'i' } }
+        { url: { $regex: search, $options: 'i' } }
       ];
     }
 

@@ -622,7 +622,7 @@ export default function EditPostPage() {
                 <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </button>
               <div className="flex-1">
-                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                   Edit Post
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-400">
@@ -684,7 +684,6 @@ export default function EditPostPage() {
                       <label className="block text-xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
                         <div className="w-3 h-3 bg-purple-500 rounded-full mr-4"></div>
                         Target Domain *
-                        <span className="ml-2 text-red-500 text-sm font-normal">(Required)</span>
                       </label>
                       <div className="relative group">
                         <div className="relative">
@@ -700,9 +699,12 @@ export default function EditPostPage() {
                                 setShowDomainDropdown(true)
                               }}
                               onFocus={() => setShowDomainDropdown(true)}
-                              onBlur={() => {
-                                // Delay closing to allow click on dropdown items
-                                setTimeout(() => setShowDomainDropdown(false), 200)
+                              onBlur={(e) => {
+                                // Only close if the blur is not caused by clicking on dropdown items
+                                const relatedTarget = e.relatedTarget as HTMLElement
+                                if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
+                                  setTimeout(() => setShowDomainDropdown(false), 150)
+                                }
                               }}
                               placeholder="Select a domain..."
                               className={`w-full px-4 py-3 pr-10 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-mono ${
@@ -722,7 +724,7 @@ export default function EditPostPage() {
                           
                           {/* Dropdown Select */}
                           {showDomainDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
+                            <div data-domain-dropdown className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
                               {loadingWebsites ? (
                                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
@@ -735,17 +737,23 @@ export default function EditPostPage() {
                                     <button
                                       key={website._id}
                                       type="button"
-                                      onClick={() => {
+                                      onMouseDown={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
                                         console.log('🔍 Selecting domain:', domain)
                                         console.log('🔍 Current formData.domain before:', formData.domain)
                                         
+                                        // Update form data with the selected domain
                                         setFormData(prev => {
                                           const newData = { ...prev, domain }
                                           console.log('🔍 New formData:', newData)
                                           return newData
                                         })
                                         
+                                        // Update search term to match the selected domain
                                         setDomainSearchTerm(domain)
+                                        
+                                        // Close dropdown and clear any errors
                                         setShowDomainDropdown(false)
                                         setDomainError('')
                                         
