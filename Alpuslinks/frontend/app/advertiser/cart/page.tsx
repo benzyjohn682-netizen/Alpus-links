@@ -22,8 +22,8 @@ export default function AdvertiserCartPage() {
   }
 
   const handleAddGP = (websiteId: string, domain: string, price: number) => {
-    // Just navigate to create post page - don't add another item to cart
-    router.push('/advertiser/posts/create')
+    // Navigate to create post page with the specific domain
+    router.push(`/advertiser/posts/create?domain=${encodeURIComponent(domain)}`)
   }
 
   return (

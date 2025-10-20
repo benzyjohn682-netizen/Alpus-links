@@ -8,6 +8,7 @@ import CodeEditor from '@/components/editor/CodeEditor'
 import RichTextEditor from '@/components/editor/RichTextEditor'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { ChevronDown, Search } from 'lucide-react'
 
 interface AnchorPair {
   id: string
@@ -36,6 +37,10 @@ export default function EditPostPage() {
   const [domainError, setDomainError] = useState('')
   const [anchorPairs, setAnchorPairs] = useState<AnchorPair[]>([])
   const [extractedAnchorPairs, setExtractedAnchorPairs] = useState<AnchorPair[]>([])
+  const [websites, setWebsites] = useState<any[]>([])
+  const [showDomainDropdown, setShowDomainDropdown] = useState(false)
+  const [domainSearchTerm, setDomainSearchTerm] = useState('')
+  const [loadingWebsites, setLoadingWebsites] = useState(false)
   const [showFormatDropdown, setShowFormatDropdown] = useState(false)
   const [showFontSizeDropdown, setShowFontSizeDropdown] = useState(false)
   const [editorMode, setEditorMode] = useState<'visual' | 'html'>('visual')
@@ -43,6 +48,34 @@ export default function EditPostPage() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [wordCount, setWordCount] = useState(0)
   const editorRef = useRef<HTMLDivElement>(null)
+
+  // Fetch websites for domain dropdown
+  const fetchWebsites = async (searchTerm = '') => {
+    try {
+      setLoadingWebsites(true)
+      const response = await apiService.getAdvertiserWebsites({
+        page: 1,
+        limit: 100, // Get more websites for better selection
+        search: searchTerm
+      })
+      
+      if ((response.data as any)?.websites) {
+        setWebsites((response.data as any).websites)
+      }
+    } catch (error) {
+      console.error('Error fetching websites:', error)
+      toast.error('Failed to load websites')
+    } finally {
+      setLoadingWebsites(false)
+    }
+  }
+
+  // Filter websites based on search term
+  const filteredWebsites = websites.filter(website => {
+    if (!domainSearchTerm.trim()) return true // Show all when search is empty
+    return website.domain?.toLowerCase().includes(domainSearchTerm.toLowerCase()) ||
+           website.url?.toLowerCase().includes(domainSearchTerm.toLowerCase())
+  })
 
   useEffect(() => {
     const load = async () => {
@@ -116,6 +149,26 @@ export default function EditPostPage() {
     }
     load()
   }, [postId, router])
+
+  // Fetch websites on component mount
+  useEffect(() => {
+    fetchWebsites()
+  }, [])
+
+  // Initialize domain search term when component mounts
+  useEffect(() => {
+    if (formData.domain && !domainSearchTerm) {
+      setDomainSearchTerm(formData.domain)
+    }
+  }, [formData.domain, domainSearchTerm])
+
+  // Update domain search term when form data changes
+  useEffect(() => {
+    console.log('🔍 formData.domain changed to:', formData.domain)
+    if (formData.domain) {
+      setDomainSearchTerm(formData.domain)
+    }
+  }, [formData.domain])
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -544,13 +597,16 @@ export default function EditPostPage() {
       if (showFormatDropdown) {
         setShowFormatDropdown(false)
       }
+      if (showDomainDropdown) {
+        setShowDomainDropdown(false)
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showFormatDropdown])
+  }, [showFormatDropdown, showDomainDropdown])
 
   return (
     <ProtectedRoute allowedRoles={["advertiser"]}>
@@ -631,20 +687,93 @@ export default function EditPostPage() {
                         <span className="ml-2 text-red-500 text-sm font-normal">(Required)</span>
                       </label>
                       <div className="relative group">
-                        <input
-                          type="url"
-                          value={formData.domain}
-                          onChange={(e) => {
-                            const domain = e.target.value
-                            handleInputChange('domain', domain)
-                          }}
-                          placeholder="https://example.com"
-                          className={`w-full px-4 py-3 border-2 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-mono ${
-                            domainError 
-                              ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500' 
-                              : 'border-gray-200 dark:border-gray-700 focus:ring-purple-500/20 focus:border-purple-500'
-                          }`}
-                        />
+                        <div className="relative">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={formData.domain}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                console.log('🔍 Input onChange:', value)
+                                setFormData(prev => ({ ...prev, domain: value }))
+                                setDomainSearchTerm(value)
+                                setShowDomainDropdown(true)
+                              }}
+                              onFocus={() => setShowDomainDropdown(true)}
+                              onBlur={() => {
+                                // Delay closing to allow click on dropdown items
+                                setTimeout(() => setShowDomainDropdown(false), 200)
+                              }}
+                              placeholder="Select a domain..."
+                              className={`w-full px-4 py-3 pr-10 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-mono ${
+                                domainError 
+                                  ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
+                                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-purple-500/20 focus:border-purple-500'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowDomainDropdown(!showDomainDropdown)}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                            >
+                              <ChevronDown className={`w-5 h-5 transition-transform ${showDomainDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                          </div>
+                          
+                          {/* Dropdown Select */}
+                          {showDomainDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
+                              {loadingWebsites ? (
+                                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
+                                  <p className="mt-2">Loading domains...</p>
+                                </div>
+                              ) : filteredWebsites.length > 0 ? (
+                                filteredWebsites.map((website) => {
+                                  const domain = website.domain || new URL(website.url).hostname.replace('www.', '')
+                                  return (
+                                    <button
+                                      key={website._id}
+                                      type="button"
+                                      onClick={() => {
+                                        console.log('🔍 Selecting domain:', domain)
+                                        console.log('🔍 Current formData.domain before:', formData.domain)
+                                        
+                                        setFormData(prev => {
+                                          const newData = { ...prev, domain }
+                                          console.log('🔍 New formData:', newData)
+                                          return newData
+                                        })
+                                        
+                                        setDomainSearchTerm(domain)
+                                        setShowDomainDropdown(false)
+                                        setDomainError('')
+                                        
+                                        console.log('🔍 Domain selection completed')
+                                      }}
+                                      className={`w-full px-4 py-3 text-left hover:bg-purple-50 dark:hover:bg-purple-900/20 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                                        formData.domain === domain ? 'bg-purple-100 dark:bg-purple-900/30' : ''
+                                      }`}
+                                    >
+                                      <div className="font-medium text-gray-900 dark:text-white">
+                                        {domain}
+                                      </div>
+                                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                                        {website.url}
+                                      </div>
+                                    </button>
+                                  )
+                                })
+                              ) : (
+                                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                                  <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                                  <p>No domains found</p>
+                                  <p className="text-xs mt-1">Try a different search term</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         <span className="absolute right-4 top-4 text-sm text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium">{formData.domain.length}</span>
                       </div>
                       {domainError ? (
