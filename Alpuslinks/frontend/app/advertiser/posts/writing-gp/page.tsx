@@ -33,6 +33,7 @@ export default function WritingGPPage() {
   const [showDomainDropdown, setShowDomainDropdown] = useState(false)
   const [domainSearchTerm, setDomainSearchTerm] = useState('')
   const [domainError, setDomainError] = useState('')
+  const [isDomainFromCart, setIsDomainFromCart] = useState(false)
 
   // Load advertiser websites for domain dropdown
   useEffect(() => {
@@ -50,6 +51,18 @@ export default function WritingGPPage() {
     }
     loadWebsites()
   }, [domainSearchTerm])
+
+  // Pre-populate domain from cart if provided
+  useEffect(() => {
+    const domainFromCart = searchParams.get('domain')
+    const fromCart = searchParams.get('from') === 'cart'
+    
+    if (domainFromCart && fromCart) {
+      setFormData(prev => ({ ...prev, domain: domainFromCart }))
+      setDomainSearchTerm(domainFromCart)
+      setIsDomainFromCart(true)
+    }
+  }, [searchParams])
 
   const filteredWebsites = websites.filter((website) => {
     if (!domainSearchTerm.trim()) return true
@@ -174,33 +187,44 @@ export default function WritingGPPage() {
                   <input
                     type="text"
                     value={formData.domain}
+                    disabled={isDomainFromCart}
                     onChange={(e) => {
-                      const value = e.target.value
-                      setField('domain', value)
-                      setDomainSearchTerm(value)
-                      setShowDomainDropdown(true)
-                      setDomainError(validateDomain(value))
-                    }}
-                    onFocus={() => setShowDomainDropdown(true)}
-                    onBlur={(e) => {
-                      const relatedTarget = e.relatedTarget as HTMLElement
-                      if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
-                        setTimeout(() => setShowDomainDropdown(false), 150)
+                      if (!isDomainFromCart) {
+                        const value = e.target.value
+                        setField('domain', value)
+                        setDomainSearchTerm(value)
+                        setShowDomainDropdown(true)
+                        setDomainError(validateDomain(value))
                       }
                     }}
-                    placeholder="Select a domain..."
-                    className={`w-full px-3 py-2 pr-10 rounded-xl border ${domainError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    onFocus={() => {
+                      if (!isDomainFromCart) {
+                        setShowDomainDropdown(true)
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (!isDomainFromCart) {
+                        const relatedTarget = e.relatedTarget as HTMLElement
+                        if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
+                          setTimeout(() => setShowDomainDropdown(false), 150)
+                        }
+                      }
+                    }}
+                    placeholder={isDomainFromCart ? "Domain selected from cart" : "Select a domain..."}
+                    className={`w-full px-3 py-2 pr-10 rounded-xl border ${domainError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${isDomainFromCart ? 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowDomainDropdown(!showDomainDropdown)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
-                  >
-                    <ChevronDown className={`w-5 h-5 transition-transform ${showDomainDropdown ? 'rotate-180' : ''}`} />
-                  </button>
+                  {!isDomainFromCart && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDomainDropdown(!showDomainDropdown)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                    >
+                      <ChevronDown className={`w-5 h-5 transition-transform ${showDomainDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
                 </div>
 
-                {showDomainDropdown && (
+                {!isDomainFromCart && showDomainDropdown && (
                   <div data-domain-dropdown className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto">
                     {loadingWebsites ? (
                       <div className="p-4 text-center text-gray-500 dark:text-gray-400">

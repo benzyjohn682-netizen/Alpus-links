@@ -32,8 +32,8 @@ export default function AdvertiserCartPage() {
   }
 
   const handleAddWritingGP = (websiteId: string, domain: string, price: number) => {
-    // Navigate to create writing + GP page with cart flag
-    router.push('/advertiser/posts/writing-gp?from=cart')
+    // Navigate to create writing + GP page with cart flag and domain
+    router.push(`/advertiser/posts/writing-gp?from=cart&domain=${encodeURIComponent(domain)}`)
   }
 
   return (
@@ -221,21 +221,6 @@ export default function AdvertiserCartPage() {
                         </div>
                       </div>
 
-                      {/* Coupon section */}
-                      <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Coupon Code
-                        </label>
-                        <div className="flex space-x-2">
-                          <input 
-                            placeholder="Enter code" 
-                            className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                          />
-                          <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                            Apply
-                          </button>
-                        </div>
-                      </div>
 
                       {/* Checkout button */}
                       <button className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
