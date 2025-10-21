@@ -8,6 +8,7 @@ import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
 
 interface LinkInsertionAsPost {
+  title: string
   completeUrl: string
   content: string
   metaTitle?: string
@@ -20,8 +21,12 @@ export default function CreateLinkInsertionAsPostPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<LinkInsertionAsPost>({
+    title: '',
     completeUrl: '',
     content: '',
+    metaTitle: '',
+    metaDescription: '',
+    keywords: '',
     anchorPairs: [
       { text: '', link: '' }
     ],
@@ -35,12 +40,38 @@ export default function CreateLinkInsertionAsPostPage() {
 
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!formData.completeUrl.trim() || !isValidUrl(formData.completeUrl)) e.completeUrl = 'Valid Post URL required'
+    if (!formData.title.trim()) e.title = 'Title is required'
+    
+    // Check if completeUrl is provided and valid
+    if (!formData.completeUrl.trim()) {
+      e.completeUrl = 'Post URL is required'
+    } else {
+      // Test both the original URL and the formatted URL
+      const formattedUrl = formatUrl(formData.completeUrl)
+      console.log('Validating URL:', { original: formData.completeUrl, formatted: formattedUrl })
+      if (!isValidUrl(formData.completeUrl) && !isValidUrl(formattedUrl)) {
+        e.completeUrl = 'Valid Post URL required'
+      }
+    }
+    
     const pair = formData.anchorPairs[0]
     if (!pair.text.trim()) e.anchorText = 'Anchor text required'
     if (!pair.link.trim() || !isValidUrl(pair.link)) e.anchorUrl = 'Valid anchor URL required'
     setErrors(e)
+    console.log('Validation errors:', e)
     return Object.keys(e).length === 0
+  }
+
+  const formatUrl = (url: string): string => {
+    if (!url.trim()) return ''
+    
+    // If URL already has protocol, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
+    }
+    
+    // Add https:// protocol if missing
+    return `https://${url}`
   }
 
   const setField = (key: keyof LinkInsertionAsPost, value: any) => {
@@ -60,8 +91,8 @@ export default function CreateLinkInsertionAsPostPage() {
     try {
       setSaving(true)
       await apiService.savePostDraft({
-        title: 'Link Insertion Request',
-        completeUrl: formData.completeUrl,
+        title: formData.title,
+        completeUrl: formatUrl(formData.completeUrl),
         content: formData.content,
         metaTitle: formData.metaTitle || '',
         metaDescription: formData.metaDescription || '',
@@ -82,15 +113,18 @@ export default function CreateLinkInsertionAsPostPage() {
     if (!validate()) return toast.error('Please fix errors')
     try {
       setSaving(true)
-      await apiService.submitPost({
-        title: 'Link Insertion Request',
-        completeUrl: formData.completeUrl,
+      const submitData = {
+        title: formData.title,
+        completeUrl: formatUrl(formData.completeUrl),
         content: formData.content,
         metaTitle: formData.metaTitle || '',
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs,
-      })
+      }
+      
+      console.log('Submitting Link Insertion post:', submitData)
+      await apiService.submitPost(submitData)
       toast.success('Submitted for review')
       router.push('/advertiser/posts')
     } catch (e: any) {
@@ -113,7 +147,16 @@ export default function CreateLinkInsertionAsPostPage() {
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 space-y-6">
-            {/* Title field removed as requested */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+              <input 
+                value={formData.title} 
+                onChange={e => setField('title', e.target.value)} 
+                className={`w-full px-3 py-2 rounded-xl border ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white`} 
+                placeholder="Enter link insertion title" 
+              />
+              {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title}</p>}
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Post URL</label>

@@ -10,11 +10,11 @@ import toast from 'react-hot-toast'
 interface WritingGPForm {
   title: string
   domain: string
-  description: string
   content: string
   metaTitle?: string
   metaDescription?: string
   keywords?: string
+  anchorPairs: { text: string; link: string }[]
 }
 
 export default function EditWritingGPPage() {
@@ -27,8 +27,8 @@ export default function EditWritingGPPage() {
   const [formData, setFormData] = useState<WritingGPForm>({
     title: '',
     domain: '',
-    description: '',
-    content: ''
+    content: '',
+    anchorPairs: []
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [websites, setWebsites] = useState<any[]>([])
@@ -68,8 +68,8 @@ export default function EditWritingGPPage() {
         setFormData({
           title: post.title || '',
           domain: domain,
-          description: post.description || '',
-          content: post.content || ''
+          content: post.content || '',
+          anchorPairs: post.anchorPairs || []
         })
         setDomainSearchTerm(domain)
         
@@ -128,13 +128,39 @@ export default function EditWritingGPPage() {
   const validate = () => {
     const e: Record<string, string> = {}
     if (!formData.title.trim()) e.title = 'Title is required'
-    if (!formData.domain.trim()) e.domain = 'Target Domain is required'
+    
+    const domainError = validateDomain(formData.domain)
+    if (domainError) e.domain = domainError
+    
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
   const setField = (key: keyof WritingGPForm, value: any) => {
     setFormData(prev => ({ ...prev, [key]: value }))
+  }
+
+  const addAnchorPair = () => {
+    setFormData(prev => ({
+      ...prev,
+      anchorPairs: [...prev.anchorPairs, { text: '', link: '' }]
+    }))
+  }
+
+  const removeAnchorPair = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      anchorPairs: prev.anchorPairs.filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateAnchorPair = (index: number, field: 'text' | 'link', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      anchorPairs: prev.anchorPairs.map((pair, i) => 
+        i === index ? { ...pair, [field]: value } : pair
+      )
+    }))
   }
 
   const formatSlugForBackend = (text: string): string => {
@@ -162,12 +188,11 @@ export default function EditWritingGPPage() {
       await apiService.updatePost(postId, {
         title: formData.title,
         completeUrl: buildCompleteUrl(),
-        description: formData.description,
         content: formData.content,
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
-        anchorPairs: []
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
       })
       toast.success('Draft updated')
       router.push('/advertiser/posts')
@@ -186,12 +211,11 @@ export default function EditWritingGPPage() {
       await apiService.updatePost(postId, {
         title: formData.title,
         completeUrl: buildCompleteUrl(),
-        description: formData.description,
         content: formData.content,
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
-        anchorPairs: []
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
       })
       toast.success('Updated and submitted for review')
       router.push('/advertiser/posts')
@@ -323,8 +347,70 @@ export default function EditWritingGPPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Content Notes (optional)</label>
-              <textarea value={formData.content} onChange={e => setField('content', e.target.value)} rows={8} className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Requirements</label>
+              <textarea 
+                value={formData.content} 
+                onChange={e => setField('content', e.target.value)} 
+                rows={8} 
+                placeholder="Describe your content requirements, target audience, tone, and any specific guidelines..."
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+              />
+            </div>
+
+            {/* Anchor Text and Link Fields */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Anchor Pairs</label>
+                <button
+                  type="button"
+                  onClick={addAnchorPair}
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  <span>+</span>
+                  Add Anchor Pair
+                </button>
+              </div>
+              
+              {formData.anchorPairs.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <p>No anchor pairs added yet</p>
+                  <p className="text-sm">Click "Add Anchor Pair" to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {formData.anchorPairs.map((pair, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Anchor Text</label>
+                        <input 
+                          value={pair.text} 
+                          onChange={e => updateAnchorPair(index, 'text', e.target.value)} 
+                          placeholder="Enter anchor text..."
+                          className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Anchor Link</label>
+                        <input 
+                          value={pair.link} 
+                          onChange={e => updateAnchorPair(index, 'link', e.target.value)} 
+                          placeholder="Enter anchor link..."
+                          className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                        />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => removeAnchorPair(index)}
+                          className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
