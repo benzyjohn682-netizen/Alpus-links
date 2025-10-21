@@ -44,6 +44,10 @@ router.post('/draft', auth, [
         || 'untitled';
     }
 
+    // Make slug unique by including post type and timestamp
+    const timestamp = Date.now();
+    const uniqueSlug = `${slug}-${postType || 'regular'}-${timestamp}`;
+
     // Verify domain exists and is reachable (skip for link insertions)
     if (domain && postType !== 'link-insertion') {
       console.log(`Verifying domain for post: ${domain}`);
@@ -67,26 +71,11 @@ router.post('/draft', auth, [
       }
     }
 
-    const existing = await Post.findOne({ advertiserId, slug });
-    if (existing) {
-      existing.title = title;
-      existing.completeUrl = completeUrl;
-      existing.description = description || '';
-      existing.metaTitle = metaTitle || '';
-      existing.metaDescription = metaDescription || '';
-      existing.keywords = keywords || '';
-      existing.content = content || '';
-      existing.anchorPairs = Array.isArray(anchorPairs) ? anchorPairs : [];
-      existing.status = 'draft';
-      existing.postType = postType || 'regular';
-      await existing.save();
-      return res.json({ message: 'Draft updated', post: existing });
-    }
-
+    // Always create a new post for drafts to avoid conflicts
     const post = new Post({
       advertiserId,
       title,
-      slug,
+      slug: uniqueSlug,
       completeUrl: completeUrl,
       description: description || '',
       metaTitle: metaTitle || '',
@@ -154,6 +143,10 @@ router.post('/submit', auth, [
         || 'untitled';
     }
 
+    // Make slug unique by including post type and timestamp
+    const timestamp = Date.now();
+    const uniqueSlug = `${slug}-${postType || 'regular'}-${timestamp}`;
+
     // Skip domain verification for link insertions
     if (postType !== 'link-insertion' && domain) {
       console.log(`Verifying domain for submission: ${domain}`);
@@ -177,21 +170,21 @@ router.post('/submit', auth, [
       }
     }
 
-    let post = await Post.findOne({ advertiserId, slug });
-    if (!post) {
-      post = new Post({ advertiserId, slug });
-    }
-
-    post.title = title;
-    post.completeUrl = completeUrl;
-    post.description = description || '';
-    post.metaTitle = metaTitle || '';
-    post.metaDescription = metaDescription || '';
-    post.keywords = keywords || '';
-    post.content = content || '';
-    post.anchorPairs = Array.isArray(anchorPairs) ? anchorPairs : [];
-    post.status = 'pending';
-    post.postType = postType || 'regular';
+    // Always create a new post for submissions to avoid conflicts
+    const post = new Post({
+      advertiserId,
+      title,
+      slug: uniqueSlug,
+      completeUrl: completeUrl,
+      description: description || '',
+      metaTitle: metaTitle || '',
+      metaDescription: metaDescription || '',
+      keywords: keywords || '',
+      content: content || '',
+      anchorPairs: Array.isArray(anchorPairs) ? anchorPairs : [],
+      status: 'pending',
+      postType: postType || 'regular'
+    });
     await post.save();
 
     res.status(200).json({ message: 'Post submitted for moderation', post });
