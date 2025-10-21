@@ -98,6 +98,7 @@ export default function CreateLinkInsertionAsPostPage() {
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs,
+        postType: 'link-insertion'
       })
       toast.success('Draft saved')
       router.push('/advertiser/posts')
@@ -121,6 +122,7 @@ export default function CreateLinkInsertionAsPostPage() {
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs,
+        postType: 'link-insertion'
       }
       
       console.log('Submitting Link Insertion post:', submitData)

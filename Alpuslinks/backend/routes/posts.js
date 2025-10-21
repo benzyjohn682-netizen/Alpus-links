@@ -17,7 +17,7 @@ router.post('/draft', auth, [
     }
 
     const advertiserId = req.user._id;
-    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs } = req.body;
+    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs, postType } = req.body;
 
     // Extract slug from complete URL for uniqueness check
     let slug = 'untitled';
@@ -78,6 +78,7 @@ router.post('/draft', auth, [
       existing.content = content || '';
       existing.anchorPairs = Array.isArray(anchorPairs) ? anchorPairs : [];
       existing.status = 'draft';
+      existing.postType = postType || 'regular';
       await existing.save();
       return res.json({ message: 'Draft updated', post: existing });
     }
@@ -93,7 +94,8 @@ router.post('/draft', auth, [
       keywords: keywords || '',
       content: content || '',
       anchorPairs: Array.isArray(anchorPairs) ? anchorPairs : [],
-      status: 'draft'
+      status: 'draft',
+      postType: postType || 'regular'
     });
     await post.save();
     res.status(201).json({ message: 'Draft created', post });
@@ -118,7 +120,7 @@ router.post('/submit', auth, [
     }
 
     const advertiserId = req.user._id;
-    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs } = req.body;
+    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs, postType } = req.body;
 
     // Custom validation: content is required for non-link-insertion posts
     if (title !== 'Link Insertion Request' && (!content || content.trim() === '')) {
@@ -189,6 +191,7 @@ router.post('/submit', auth, [
     post.content = content || '';
     post.anchorPairs = Array.isArray(anchorPairs) ? anchorPairs : [];
     post.status = 'pending';
+    post.postType = postType || 'regular';
     await post.save();
 
     res.status(200).json({ message: 'Post submitted for moderation', post });
@@ -239,7 +242,7 @@ router.put('/:id', auth, [
 
     const { id } = req.params;
     const advertiserId = req.user._id;
-    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs } = req.body;
+    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs, postType } = req.body;
 
     const post = await Post.findOne({ _id: id, advertiserId });
     if (!post) {
@@ -278,6 +281,7 @@ router.put('/:id', auth, [
     post.keywords = keywords || '';
     post.content = content || '';
     post.anchorPairs = Array.isArray(anchorPairs) ? anchorPairs : [];
+    post.postType = postType || 'regular';
     
     await post.save();
     res.json({ message: 'Post updated', post });

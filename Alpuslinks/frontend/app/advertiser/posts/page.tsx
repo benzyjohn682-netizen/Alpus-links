@@ -33,6 +33,7 @@ interface Post {
   keywords: string
   content: string
   status: 'draft' | 'pending' | 'approved' | 'rejected'
+  postType: 'regular' | 'link-insertion' | 'writing-gp'
   createdAt: string
   updatedAt: string
   anchorPairs: Array<{
@@ -148,30 +149,65 @@ export default function PostManagementPage() {
     router.push('/advertiser/posts/writing-gp')
   }
 
-  const handleEditPost = (post: Post) => {
-    // Determine the correct edit route based on post type
-    // Check if it's a Writing + GP post by looking for specific patterns
-    const isWritingGP = post.title === 'Writing + GP' || 
-                       post.title.includes('Writing') || 
-                       post.title.includes('GP') ||
-                       post.title === 'ad' || // Based on your current post
-                       post.title.length <= 3 || // Short titles are likely Writing + GP
-                       (!post.anchorPairs || post.anchorPairs.length === 0) // No anchor pairs suggests Writing + GP
-    
-    // Check if it's a Link Insertion post
-    const isLinkInsertion = post.title === 'Link Insertion Request' || 
-                           post.title.includes('Link Insertion') ||
-                           (post.anchorPairs && post.anchorPairs.length > 0) // Has anchor pairs suggests Link Insertion
-    
-    if (isWritingGP) {
-      router.push(`/advertiser/posts/writing-gp/edit/${post._id}`)
-    } 
-    else if (isLinkInsertion) {
-      router.push(`/advertiser/posts/link-insertion/edit/${post._id}`)
+  const getEditButtonText = (post: Post) => {
+    // Handle posts that might not have postType set (fallback logic)
+    if (!post.postType) {
+      // Fallback to content-based detection for older posts
+      if (post.title === 'Link Insertion Request' || 
+          post.title.includes('Link Insertion') ||
+          (post.anchorPairs && post.anchorPairs.length > 0 && 
+           !post.title.includes('Writing') && 
+           !post.title.includes('GP'))) {
+        return 'Edit Link Insertion'
+      } else if (post.title === 'Writing + GP' || 
+                 post.title.includes('Writing') || 
+                 post.title.includes('GP') ||
+                 (post.title.length <= 3 && (!post.anchorPairs || post.anchorPairs.length === 0))) {
+        return 'Edit Writing + GP'
+      }
+      return 'Edit Post'
     }
-    // Regular posts go to the standard edit page
-    else {
+    
+    switch (post.postType) {
+      case 'link-insertion': return 'Edit Link Insertion'
+      case 'writing-gp': return 'Edit Writing + GP'
+      default: return 'Edit Post'
+    }
+  }
+
+  const handleEditPost = (post: Post) => {
+    // Handle posts that might not have postType set (fallback logic)
+    if (!post.postType) {
+      // Fallback to content-based detection for older posts
+      if (post.title === 'Link Insertion Request' || 
+          post.title.includes('Link Insertion') ||
+          (post.anchorPairs && post.anchorPairs.length > 0 && 
+           !post.title.includes('Writing') && 
+           !post.title.includes('GP'))) {
+        router.push(`/advertiser/posts/link-insertion/edit/${post._id}`)
+        return
+      } else if (post.title === 'Writing + GP' || 
+                 post.title.includes('Writing') || 
+                 post.title.includes('GP') ||
+                 (post.title.length <= 3 && (!post.anchorPairs || post.anchorPairs.length === 0))) {
+        router.push(`/advertiser/posts/writing-gp/edit/${post._id}`)
+        return
+      }
       router.push(`/advertiser/posts/edit/${post._id}`)
+      return
+    }
+    
+    // Use the postType field to determine the correct edit route
+    switch (post.postType) {
+      case 'link-insertion':
+        router.push(`/advertiser/posts/link-insertion/edit/${post._id}`)
+        break
+      case 'writing-gp':
+        router.push(`/advertiser/posts/writing-gp/edit/${post._id}`)
+        break
+      default:
+        router.push(`/advertiser/posts/edit/${post._id}`)
+        break
     }
   }
 
@@ -408,7 +444,7 @@ export default function PostManagementPage() {
                         <button
                           onClick={() => handleEditPost(post)}
                           className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                          title="Edit Post"
+                          title={getEditButtonText(post)}
                         >
                           <Edit className="w-4 h-4" />
                         </button>

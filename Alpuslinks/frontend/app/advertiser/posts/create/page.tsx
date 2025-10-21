@@ -280,7 +280,8 @@ export default function CreatePostPage() {
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
         content: formData.content,
-        anchorPairs: [...anchorPairs, ...extractedAnchorPairs].map(p => ({ text: p.text, link: p.link }))
+        anchorPairs: [...anchorPairs, ...extractedAnchorPairs].map(p => ({ text: p.text, link: p.link })),
+        postType: 'regular'
       }
       
       console.log('Submitting post with payload:', payload)

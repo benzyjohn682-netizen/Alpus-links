@@ -59,6 +59,12 @@ const postSchema = new mongoose.Schema({
     enum: ['draft', 'pending', 'approved', 'rejected'],
     default: 'draft',
     index: true
+  },
+  postType: {
+    type: String,
+    enum: ['regular', 'link-insertion', 'writing-gp'],
+    default: 'regular',
+    index: true
   }
 }, { timestamps: true });
 

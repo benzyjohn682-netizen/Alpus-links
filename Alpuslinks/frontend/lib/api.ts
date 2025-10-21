@@ -501,6 +501,7 @@ class ApiService {
     keywords?: string
     content: string
     anchorPairs?: { text: string; link: string }[]
+    postType?: string
   }) {
     return this.request('/posts/draft', {
       method: 'POST',
@@ -517,6 +518,7 @@ class ApiService {
     keywords?: string
     content: string
     anchorPairs?: { text: string; link: string }[]
+    postType?: string
   }) {
     return this.request('/posts/submit', {
       method: 'POST',
@@ -541,6 +543,7 @@ class ApiService {
     keywords?: string
     content: string
     anchorPairs?: { text: string; link: string }[]
+    postType?: string
   }) {
     return this.request(`/posts/${postId}`, {
       method: 'PUT',

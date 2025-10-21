@@ -164,7 +164,8 @@ export default function WritingGPPage() {
         metaTitle: formData.metaTitle,
         metaDescription: isFromCart ? 'cart-created' : formData.metaDescription,
         keywords: isFromCart ? 'cart-created' : formData.keywords,
-        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
+        postType: 'writing-gp'
       })
       toast.success('Draft saved')
       router.push('/advertiser/posts')
@@ -189,7 +190,8 @@ export default function WritingGPPage() {
         metaTitle: formData.metaTitle,
         metaDescription: isFromCart ? 'cart-created' : formData.metaDescription,
         keywords: isFromCart ? 'cart-created' : formData.keywords,
-        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
+        postType: 'writing-gp'
       }
       
       console.log('Submitting Writing + GP post:', submitData)

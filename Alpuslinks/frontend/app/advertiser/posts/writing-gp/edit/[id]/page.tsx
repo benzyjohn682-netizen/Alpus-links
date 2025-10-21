@@ -2,7 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Save, Send, ChevronDown, Search } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 interface WritingGPForm {
   title: string
   domain: string
+  description: string
   content: string
   metaTitle?: string
   metaDescription?: string
@@ -27,8 +28,9 @@ export default function EditWritingGPPage() {
   const [formData, setFormData] = useState<WritingGPForm>({
     title: '',
     domain: '',
+    description: '',
     content: '',
-    anchorPairs: []
+    anchorPairs: [{ text: '', link: '' }]
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [websites, setWebsites] = useState<any[]>([])
@@ -36,7 +38,7 @@ export default function EditWritingGPPage() {
   const [showDomainDropdown, setShowDomainDropdown] = useState(false)
   const [domainSearchTerm, setDomainSearchTerm] = useState('')
   const [domainError, setDomainError] = useState('')
-  const [isDomainLocked, setIsDomainLocked] = useState(false)
+  const [isDomainFromCart, setIsDomainFromCart] = useState(false)
 
   // Load post data
   useEffect(() => {
@@ -55,30 +57,18 @@ export default function EditWritingGPPage() {
         }
         
         // Extract domain from completeUrl
-        let domain = ''
-        if (post.completeUrl) {
-          try {
-            const url = new URL(post.completeUrl.startsWith('http') ? post.completeUrl : `https://${post.completeUrl}`)
-            domain = url.origin
-          } catch {
-            domain = post.completeUrl
-          }
-        }
+        const domain = post.completeUrl ? new URL(post.completeUrl).hostname.replace('www.', '') : ''
         
         setFormData({
           title: post.title || '',
           domain: domain,
+          description: post.description || '',
           content: post.content || '',
-          anchorPairs: post.anchorPairs || []
+          metaTitle: post.metaTitle || '',
+          metaDescription: post.metaDescription || '',
+          keywords: post.keywords || '',
+          anchorPairs: post.anchorPairs || [{ text: '', link: '' }]
         })
-        setDomainSearchTerm(domain)
-        
-        // Check if domain should be locked (created from cart)
-        // If the post has a specific flag or was created from cart, lock the domain
-        const isFromCart = post.metaDescription?.includes('cart-created') || 
-                          post.keywords?.includes('cart-created') ||
-                          post.content?.includes('cart-created')
-        setIsDomainLocked(isFromCart)
       } catch (error: any) {
         console.error('Load error:', error)
         toast.error(error?.message || 'Failed to load post')
@@ -132,6 +122,9 @@ export default function EditWritingGPPage() {
     const domainError = validateDomain(formData.domain)
     if (domainError) e.domain = domainError
     
+    // Check if content is provided
+    if (!formData.content.trim()) e.content = 'Content is required'
+    
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -177,8 +170,17 @@ export default function EditWritingGPPage() {
   const buildCompleteUrl = (): string => {
     const domain = formData.domain
     const slug = formatSlugForBackend(formData.title)
-    if (domain && slug) return `${domain}/${slug}`
-    return domain || ''
+    
+    if (!domain) return ''
+    
+    // Ensure domain has protocol
+    const domainWithProtocol = domain.startsWith('http') ? domain : `https://${domain}`
+    
+    if (slug && slug !== 'untitled') {
+      return `${domainWithProtocol}/${slug}`
+    }
+    
+    return domainWithProtocol
   }
 
   const saveDraft = async () => {
@@ -188,6 +190,7 @@ export default function EditWritingGPPage() {
       await apiService.updatePost(postId, {
         title: formData.title,
         completeUrl: buildCompleteUrl(),
+        description: formData.description,
         content: formData.content,
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
@@ -208,15 +211,19 @@ export default function EditWritingGPPage() {
     if (!validate()) return toast.error('Please fix errors')
     try {
       setSaving(true)
-      await apiService.updatePost(postId, {
+      const submitData = {
         title: formData.title,
         completeUrl: buildCompleteUrl(),
+        description: formData.description,
         content: formData.content,
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
         anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
-      })
+      }
+      
+      console.log('Updating Writing + GP post:', submitData)
+      await apiService.updatePost(postId, submitData)
       toast.success('Updated and submitted for review')
       router.push('/advertiser/posts')
     } catch (e: any) {
@@ -232,7 +239,7 @@ export default function EditWritingGPPage() {
       <ProtectedRoute allowedRoles={["advertiser"]}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
             <p className="text-gray-600 dark:text-gray-400 mt-4">Loading post...</p>
           </div>
         </div>
@@ -258,53 +265,52 @@ export default function EditWritingGPPage() {
               {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title}</p>}
             </div>
 
-            {/* Target Domain (conditional based on source) */}
+            {/* Target Domain */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Domain</label>
               <div className="relative">
                 <div className="relative">
-                  {isDomainLocked ? (
-                    <input
-                      type="text"
-                      value={formData.domain}
-                      disabled
-                      placeholder="Domain is locked for editing"
-                      className="w-full px-3 py-2 pr-10 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                    />
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={formData.domain}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          setField('domain', value)
-                          setDomainSearchTerm(value)
-                          setShowDomainDropdown(true)
-                          setDomainError(validateDomain(value))
-                        }}
-                        onFocus={() => setShowDomainDropdown(true)}
-                        onBlur={(e) => {
-                          const relatedTarget = e.relatedTarget as HTMLElement
-                          if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
-                            setTimeout(() => setShowDomainDropdown(false), 150)
-                          }
-                        }}
-                        placeholder="Select a domain..."
-                        className={`w-full px-3 py-2 pr-10 rounded-xl border ${domainError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowDomainDropdown(!showDomainDropdown)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
-                      >
-                        <ChevronDown className={`w-5 h-5 transition-transform ${showDomainDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-                    </>
+                  <input
+                    type="text"
+                    value={formData.domain}
+                    disabled={isDomainFromCart}
+                    onChange={(e) => {
+                      if (!isDomainFromCart) {
+                        const value = e.target.value
+                        setField('domain', value)
+                        setDomainSearchTerm(value)
+                        setShowDomainDropdown(true)
+                        setDomainError(validateDomain(value))
+                      }
+                    }}
+                    onFocus={() => {
+                      if (!isDomainFromCart) {
+                        setShowDomainDropdown(true)
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (!isDomainFromCart) {
+                        const relatedTarget = e.relatedTarget as HTMLElement
+                        if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
+                          setTimeout(() => setShowDomainDropdown(false), 150)
+                        }
+                      }
+                    }}
+                    placeholder={isDomainFromCart ? "Domain selected from cart" : "Select a domain..."}
+                    className={`w-full px-3 py-2 pr-10 rounded-xl border ${domainError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${isDomainFromCart ? 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}`}
+                  />
+                  {!isDomainFromCart && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDomainDropdown(!showDomainDropdown)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                    >
+                      <ChevronDown className={`w-5 h-5 transition-transform ${showDomainDropdown ? 'rotate-180' : ''}`} />
+                    </button>
                   )}
                 </div>
 
-                {!isDomainLocked && showDomainDropdown && (
+                {!isDomainFromCart && showDomainDropdown && (
                   <div data-domain-dropdown className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto">
                     {loadingWebsites ? (
                       <div className="p-4 text-center text-gray-500 dark:text-gray-400">
@@ -343,7 +349,7 @@ export default function EditWritingGPPage() {
                   </div>
                 )}
               </div>
-              {!isDomainLocked && domainError && <p className="text-sm text-red-600 mt-1">{domainError}</p>}
+              {domainError && <p className="text-sm text-red-600 mt-1">{domainError}</p>}
             </div>
 
             <div>
