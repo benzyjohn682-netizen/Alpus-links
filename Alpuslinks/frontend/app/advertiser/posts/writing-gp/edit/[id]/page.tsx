@@ -195,7 +195,8 @@ export default function EditWritingGPPage() {
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
-        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
+        postType: 'writing-gp'
       })
       toast.success('Draft updated')
       router.push('/advertiser/posts')
@@ -219,7 +220,8 @@ export default function EditWritingGPPage() {
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
-        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
+        postType: 'writing-gp'
       }
       
       console.log('Updating Writing + GP post:', submitData)

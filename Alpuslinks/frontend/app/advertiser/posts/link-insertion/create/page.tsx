@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 interface LinkInsertionAsPost {
   title: string
   completeUrl: string
-  content: string
+  requirements?: string
   metaTitle?: string
   metaDescription?: string
   keywords?: string
@@ -23,7 +23,7 @@ export default function CreateLinkInsertionAsPostPage() {
   const [formData, setFormData] = useState<LinkInsertionAsPost>({
     title: '',
     completeUrl: '',
-    content: '',
+    requirements: '',
     metaTitle: '',
     metaDescription: '',
     keywords: '',
@@ -54,9 +54,18 @@ export default function CreateLinkInsertionAsPostPage() {
       }
     }
     
-    const pair = formData.anchorPairs[0]
-    if (!pair.text.trim()) e.anchorText = 'Anchor text required'
-    if (!pair.link.trim() || !isValidUrl(pair.link)) e.anchorUrl = 'Valid anchor URL required'
+    // Check if we have at least one valid anchor pair
+    const validPairs = formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim())
+    if (validPairs.length === 0) {
+      e.anchorPairs = 'At least one anchor pair is required'
+    } else {
+      // Validate each valid pair
+      validPairs.forEach((pair, index) => {
+        if (!pair.text.trim()) e[`anchorText${index}`] = 'Anchor text required'
+        if (!pair.link.trim() || !isValidUrl(pair.link)) e[`anchorUrl${index}`] = 'Valid anchor URL required'
+      })
+    }
+    
     setErrors(e)
     console.log('Validation errors:', e)
     return Object.keys(e).length === 0
@@ -87,23 +96,28 @@ export default function CreateLinkInsertionAsPostPage() {
   }
 
   const saveDraft = async () => {
-    if (!validate()) return toast.error('Please fix errors')
+    if (!validate()) {
+      console.log('Validation failed, errors:', errors)
+      return toast.error('Please fix errors')
+    }
     try {
       setSaving(true)
-      await apiService.savePostDraft({
+      const draftData = {
         title: formData.title,
         completeUrl: formatUrl(formData.completeUrl),
-        content: formData.content,
+        content: formData.requirements || '', // Use requirements as content
         metaTitle: formData.metaTitle || '',
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
-        anchorPairs: formData.anchorPairs,
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
         postType: 'link-insertion'
-      })
+      }
+      console.log('Saving draft with data:', draftData)
+      await apiService.savePostDraft(draftData)
       toast.success('Draft saved')
       router.push('/advertiser/posts')
     } catch (e: any) {
-      console.error(e)
+      console.error('Save draft error:', e)
       toast.error(e?.message || 'Failed to save draft')
     } finally {
       setSaving(false)
@@ -111,17 +125,20 @@ export default function CreateLinkInsertionAsPostPage() {
   }
 
   const submit = async () => {
-    if (!validate()) return toast.error('Please fix errors')
+    if (!validate()) {
+      console.log('Validation failed, errors:', errors)
+      return toast.error('Please fix errors')
+    }
     try {
       setSaving(true)
       const submitData = {
         title: formData.title,
         completeUrl: formatUrl(formData.completeUrl),
-        content: formData.content,
+        content: formData.requirements || '', // Use requirements as content
         metaTitle: formData.metaTitle || '',
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
-        anchorPairs: formData.anchorPairs,
+        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
         postType: 'link-insertion'
       }
       
@@ -130,7 +147,7 @@ export default function CreateLinkInsertionAsPostPage() {
       toast.success('Submitted for review')
       router.push('/advertiser/posts')
     } catch (e: any) {
-      console.error(e)
+      console.error('Submit error:', e)
       toast.error(e?.message || 'Failed to submit')
     } finally {
       setSaving(false)
@@ -178,12 +195,17 @@ export default function CreateLinkInsertionAsPostPage() {
                 {errors.anchorUrl && <p className="text-sm text-red-600 mt-1">{errors.anchorUrl}</p>}
               </div>
             </div>
-
-            {/* Short Description field removed as requested */}
+            {errors.anchorPairs && <p className="text-sm text-red-600 mt-1">{errors.anchorPairs}</p>}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
-              <textarea value={formData.content} onChange={e => setField('content', e.target.value)} rows={6} className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Requirements (Optional)</label>
+              <textarea 
+                value={formData.requirements} 
+                onChange={e => setField('requirements', e.target.value)} 
+                rows={4} 
+                placeholder="Describe any specific requirements, guidelines, or preferences for the link insertion..."
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+              />
             </div>
 
             <div className="flex gap-3">

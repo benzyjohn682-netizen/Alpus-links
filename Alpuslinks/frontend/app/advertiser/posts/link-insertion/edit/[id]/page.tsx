@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 interface LinkInsertionAsPost {
   title: string
   completeUrl: string
-  content: string
+  requirements?: string
   metaTitle?: string
   metaDescription?: string
   keywords?: string
@@ -27,7 +27,7 @@ export default function EditLinkInsertionAsPostPage() {
   const [formData, setFormData] = useState<LinkInsertionAsPost>({
     title: '',
     completeUrl: '',
-    content: '',
+    requirements: '',
     metaTitle: '',
     metaDescription: '',
     keywords: '',
@@ -56,7 +56,7 @@ export default function EditLinkInsertionAsPostPage() {
         setFormData({
           title: post.title || '',
           completeUrl: post.completeUrl || '',
-          content: post.content || '',
+          requirements: post.content || '', // Load content as requirements
           metaTitle: post.metaTitle || '',
           metaDescription: post.metaDescription || '',
           keywords: post.keywords || '',
@@ -133,11 +133,12 @@ export default function EditLinkInsertionAsPostPage() {
       await apiService.updatePost(postId, {
         title: formData.title,
         completeUrl: formatUrl(formData.completeUrl),
-        content: formData.content,
+        content: formData.requirements || '', // Use requirements as content
         metaTitle: formData.metaTitle || '',
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs,
+        postType: 'link-insertion'
       })
       toast.success('Draft updated')
       router.push('/advertiser/posts')
@@ -156,11 +157,12 @@ export default function EditLinkInsertionAsPostPage() {
       const submitData = {
         title: formData.title,
         completeUrl: formatUrl(formData.completeUrl),
-        content: formData.content,
+        content: formData.requirements || '', // Use requirements as content
         metaTitle: formData.metaTitle || '',
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs,
+        postType: 'link-insertion'
       }
       
       console.log('Updating Link Insertion post:', submitData)
@@ -231,8 +233,14 @@ export default function EditLinkInsertionAsPostPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
-              <textarea value={formData.content} onChange={e => setField('content', e.target.value)} rows={6} className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Requirements (Optional)</label>
+              <textarea 
+                value={formData.requirements} 
+                onChange={e => setField('requirements', e.target.value)} 
+                rows={4} 
+                placeholder="Describe any specific requirements, guidelines, or preferences for the link insertion..."
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+              />
             </div>
 
             <div className="flex gap-3">

@@ -45,7 +45,7 @@ router.post('/draft', auth, [
     }
 
     // Verify domain exists and is reachable (skip for link insertions)
-    if (domain && title !== 'Link Insertion Request') {
+    if (domain && postType !== 'link-insertion') {
       console.log(`Verifying domain for post: ${domain}`);
       try {
         const verificationResult = await domainVerificationService.verifyDomain(domain);
@@ -123,7 +123,7 @@ router.post('/submit', auth, [
     const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs, postType } = req.body;
 
     // Custom validation: content is required for non-link-insertion posts
-    if (title !== 'Link Insertion Request' && (!content || content.trim() === '')) {
+    if (postType !== 'link-insertion' && (!content || content.trim() === '')) {
       return res.status(400).json({ 
         errors: [{ msg: 'Content is required for this type of post', param: 'content' }] 
       });
@@ -155,7 +155,7 @@ router.post('/submit', auth, [
     }
 
     // Skip domain verification for link insertions
-    if (title !== 'Link Insertion Request' && domain) {
+    if (postType !== 'link-insertion' && domain) {
       console.log(`Verifying domain for submission: ${domain}`);
       try {
         const verificationResult = await domainVerificationService.verifyDomain(domain);
