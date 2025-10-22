@@ -3,47 +3,63 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { apiService } from '@/lib/api'
 import { WebsiteTable } from './WebsiteTable'
-import { TwoStepWebsiteForm } from './TwoStepWebsiteForm'
 import { WebsiteStats } from './WebsiteStats'
 import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/pagination'
 import CustomSelect from '@/components/ui/custom-select'
+import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 interface Website {
   _id: string
-  name: string
+  publisherId: string
+  domain: string
   url: string
-  description?: string
-  category: string
-  categories?: string[]
-  domainAuthority?: number
-  monthlyTraffic?: number
-  language: string
-  country: string
-  status: 'active' | 'inactive' | 'pending' | 'rejected'
-  pricing?: {
+  categories: string[]
+  pricing: {
     guestPost?: number
     linkInsertion?: number
+    writingGuestPost?: number
   }
-  requirements?: {
+  turnaroundTimeDays: number
+  country: string
+  language: string
+  status: 'pending' | 'active' | 'rejected'
+  ownershipVerification: {
+    isVerified: boolean
+    verifiedAt?: string
+    verificationMethod?: string
+    userRole: string
+    verificationCode?: string
+    verificationDetails?: {
+      metaTagContent?: string
+      fileName?: string
+      dnsRecord?: string
+    }
+    lastAttempted?: string
+    attemptCount: number
+    status: string
+    failureReason?: string
+  }
+  createdAt: string
+  updatedAt: string
+  meta?: {
+    mozDA?: number
+    ahrefsDR?: number
+    semrushTraffic?: number
+    googleAnalyticsTraffic?: number
     minWordCount?: number
     maxLinks?: number
     allowedTopics?: string[]
     prohibitedTopics?: string[]
-  }
-  contactInfo?: {
+    sponsored?: boolean
     email?: string
     phone?: string
-  }
-  socialMedia?: {
     twitter?: string
     linkedin?: string
     facebook?: string
+    notes?: string
   }
-  notes?: string
-  createdAt: string
-  updatedAt: string
 }
 
 interface WebsiteStats {
@@ -64,12 +80,11 @@ interface WebsiteStats {
 
 export function WebsiteManagement() {
   const { user } = useAuth()
+  const router = useRouter()
   const [websites, setWebsites] = useState<Website[]>([])
   const [stats, setStats] = useState<WebsiteStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [editingWebsite, setEditingWebsite] = useState<Website | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -138,46 +153,6 @@ export function WebsiteManagement() {
     loadStats()
   }, [user?.id])
 
-  const handleCreateWebsite = async (websiteData: any) => {
-    try {
-      const response = await apiService.createWebsite(websiteData)
-      if (response.data) {
-        setWebsites(prev => [response.data as Website, ...prev])
-        setShowForm(false)
-        toast.success('Website created successfully!')
-        setError(null) // Clear any previous errors
-        loadStats() // Refresh stats
-        
-        // Dispatch event to update sidebar
-        window.dispatchEvent(new CustomEvent('websiteCreated'))
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create website')
-    }
-  }
-
-  const handleUpdateWebsite = async (websiteId: string, websiteData: any) => {
-    try {
-      const response = await apiService.updateWebsite(websiteId, websiteData)
-      if (response.data) {
-        setWebsites(prev => 
-          prev.map(website => 
-            website._id === websiteId ? response.data as Website : website
-          )
-        )
-        setEditingWebsite(null)
-        setShowForm(false)
-        toast.success('Website updated successfully!')
-        setError(null) // Clear any previous errors
-        loadStats() // Refresh stats
-        
-        // Dispatch event to update sidebar
-        window.dispatchEvent(new CustomEvent('websiteUpdated'))
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update website')
-    }
-  }
 
   const handleDeleteWebsite = async (websiteId: string) => {
     if (!confirm('Are you sure you want to delete this website?')) return
@@ -197,14 +172,7 @@ export function WebsiteManagement() {
   }
 
   const handleEditWebsite = (website: Website) => {
-    setEditingWebsite(website)
-    setShowForm(true)
-    setError(null) // Clear any error messages when opening form
-  }
-
-  const handleCloseForm = () => {
-    setShowForm(false)
-    setEditingWebsite(null)
+    router.push(`/publisher/websites/edit/${website._id}`)
   }
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
@@ -256,7 +224,7 @@ export function WebsiteManagement() {
 
       {/* Ultra Beautiful Action Bar */}
       <div className="mb-8">
-        <div className="bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-8 backdrop-blur-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 backdrop-blur-sm">
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-end">
             {/* Search Section */}
             <div className="flex-1">
@@ -315,13 +283,10 @@ export function WebsiteManagement() {
             </div>
 
             {/* Add New Website Button */}
-            <div className="flex items-end">
+            <div className="flex items-center">
               <Button
-                onClick={() => {
-                  setShowForm(true)
-                  setError(null) // Clear any error messages when opening form
-                }}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-6 rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 border-2 border-blue-500/20 hover:border-blue-400/40 backdrop-blur-sm whitespace-nowrap"
+                onClick={() => router.push('/publisher/websites/create')}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 !py-4 !h-auto rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 border-2 border-blue-500/20 hover:border-blue-400/40 backdrop-blur-sm whitespace-nowrap"
               >
                 <span className="flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -355,17 +320,6 @@ export function WebsiteManagement() {
         loading={loading}
       />
 
-      {/* Website Form Modal */}
-      {showForm && (
-        <TwoStepWebsiteForm
-          website={editingWebsite}
-          onSubmit={editingWebsite ? 
-            (data) => handleUpdateWebsite(editingWebsite._id, data) :
-            handleCreateWebsite
-          }
-          onClose={handleCloseForm}
-        />
-      )}
     </div>
   )
 }

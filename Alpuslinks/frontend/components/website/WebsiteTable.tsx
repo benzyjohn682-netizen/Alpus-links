@@ -22,7 +22,16 @@ interface Website {
     verifiedAt?: string
     verificationMethod?: string
     userRole: string
+    verificationCode?: string
+    verificationDetails?: {
+      metaTagContent?: string
+      fileName?: string
+      dnsRecord?: string
+    }
+    lastAttempted?: string
+    attemptCount: number
     status: string
+    failureReason?: string
   }
   createdAt: string
   updatedAt: string
@@ -184,22 +193,22 @@ export function WebsiteTable({
             <tr>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                onClick={() => handleSort('name')}
+                onClick={() => handleSort('domain')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Website</span>
-                  {sortField === 'name' && (
+                  {sortField === 'domain' && (
                     <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </div>
               </th>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                onClick={() => handleSort('category')}
+                onClick={() => handleSort('categories')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Category</span>
-                  {sortField === 'category' && (
+                  {sortField === 'categories' && (
                     <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </div>
@@ -274,10 +283,8 @@ export function WebsiteTable({
                         </span>
                       ))
                     ) : (
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        categoryColors[website.category as keyof typeof categoryColors] || categoryColors.other
-                      }`}>
-                        {website.category.charAt(0).toUpperCase() + website.category.slice(1)}
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
+                        No categories
                       </span>
                     )}
                     {website.categories && website.categories.length > 2 && (

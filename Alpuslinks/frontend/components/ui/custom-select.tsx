@@ -91,7 +91,7 @@ export default function CustomSelect({
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         className={`
-          w-full min-w-[160px] px-4 py-3 text-left bg-white dark:bg-gray-800 
+          w-full min-w-[160px] px-4 py-4 text-left bg-white dark:bg-gray-800 
           border border-gray-200 dark:border-gray-600 rounded-xl
           hover:border-gray-300 dark:hover:border-gray-500
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
