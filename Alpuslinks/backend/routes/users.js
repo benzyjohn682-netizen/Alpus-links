@@ -618,9 +618,46 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ user });
+    res.json(user);
   } catch (error) {
     console.error('Get user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/users/:id/activities
+// @desc    Get user activities (login sessions, etc.)
+// @access  Private
+router.get('/:id/activities', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role.name?.toLowerCase() !== 'admin' && req.user.role.name?.toLowerCase() !== 'super admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const userId = req.params.id;
+    
+    // Get login sessions for the user
+    const loginSessions = await LoginSession.find({ user: userId })
+      .sort({ loginDate: -1 })
+      .limit(20)
+      .select('loginDate logoutDate ipAddress userAgent loginMethod isActive');
+
+    // Format activities
+    const activities = loginSessions.map(session => ({
+      _id: session._id,
+      type: 'login',
+      description: session.isActive 
+        ? `Logged in via ${session.loginMethod}` 
+        : `Logged out (session lasted ${Math.round((session.logoutDate - session.loginDate) / (1000 * 60))} minutes)`,
+      timestamp: session.loginDate,
+      ipAddress: session.ipAddress,
+      userAgent: session.userAgent
+    }));
+
+    res.json(activities);
+  } catch (error) {
+    console.error('Get user activities error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -15,7 +15,8 @@ import {
   ChevronDown,
   ChevronRight,
   Globe,
-  FileText
+  FileText,
+  Tag
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
@@ -187,6 +188,7 @@ export function Sidebar() {
         ]
       })
       userChildren.push({ name: 'Role Management', icon: Shield, href: '/alpus-admin/roles' })
+      userChildren.push({ name: 'Category Management', icon: Tag, href: '/alpus-admin/categories' })
       userChildren.push({ name: 'Website Management', icon: BarChart3, href: '/alpus-admin/websites' })
       userChildren.push({ name: 'System Settings', icon: Settings, href: '/alpus-admin/settings' })
     }

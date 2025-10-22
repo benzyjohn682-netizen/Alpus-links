@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { Edit, Trash2, Search, Filter, Key } from 'lucide-react'
+import { Edit, Trash2, Search, Filter, Key, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import CustomSelect from '@/components/ui/custom-select'
+import { SimpleSelect } from '@/components/ui/simple-select'
 
 interface User {
   _id: string
@@ -24,6 +26,7 @@ interface User {
 }
 
 export default function AllUsersPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -31,6 +34,8 @@ export default function AllUsersPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalCount, setTotalCount] = useState(0)
   const [roles, setRoles] = useState<any[]>([])
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
@@ -55,7 +60,7 @@ export default function AllUsersPage() {
   useEffect(() => {
     loadUsers()
     loadRoles()
-  }, [currentPage, search, roleFilter, statusFilter])
+  }, [currentPage, pageSize, search, roleFilter, statusFilter])
 
   useEffect(() => {
     loadUserStats()
@@ -76,7 +81,7 @@ export default function AllUsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true)
-      const response = await apiService.getUsers(currentPage, 10, search, roleFilter, statusFilter)
+      const response = await apiService.getUsers(currentPage, pageSize, search, roleFilter, statusFilter)
       
       // Safely handle the response data
       const usersData = (response.data as any)?.users
@@ -94,11 +99,16 @@ export default function AllUsersPage() {
       } else {
         setTotalPages(1)
       }
+      
+      if (paginationData?.total !== undefined) {
+        setTotalCount(paginationData.total)
+      }
     } catch (err) {
       console.error('Failed to load users:', err)
       toast.error('Failed to load users')
       setUsers([])
       setTotalPages(1)
+      setTotalCount(0)
     } finally {
       setLoading(false)
     }
@@ -232,6 +242,24 @@ export default function AllUsersPage() {
     }
   }
 
+  // Build a compact page list with ellipses for large page counts
+  const getPageNumbers = (total: number, current: number) => {
+    const pages: number[] = []
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i)
+      return pages
+    }
+    const add = (n: number) => { if (!pages.includes(n)) pages.push(n) }
+    add(1)
+    const left = Math.max(2, current - 1)
+    const right = Math.min(total - 1, current + 1)
+    if (left > 2) add(-1) // ellipsis
+    for (let i = left; i <= right; i++) add(i)
+    if (right < total - 1) add(-1) // ellipsis
+    add(total)
+    return pages
+  }
+
   // Bulk selection handlers
   const handleSelectUser = (userId: string) => {
     setSelectedUsers(prev => 
@@ -309,6 +337,10 @@ export default function AllUsersPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleUserNameClick = (userId: string) => {
+    router.push(`/alpus-admin/users/${userId}`)
   }
 
   return (
@@ -726,9 +758,13 @@ export default function AllUsersPage() {
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <button
+                            onClick={() => handleUserNameClick(user._id)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 hover:underline cursor-pointer transition-all duration-200 bg-transparent border-none p-0 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded px-1 py-0.5 -mx-1 -my-0.5 flex items-center gap-1"
+                          >
                             {user.firstName || ''} {user.lastName || ''}
-                          </div>
+                            <ExternalLink className="w-3 h-3 opacity-60" />
+                          </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
@@ -805,27 +841,97 @@ export default function AllUsersPage() {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-700 dark:text-gray-300">
-                    Page {currentPage} of {totalPages}
+            {totalPages > 0 && (
+              <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Show:</span>
+                      <SimpleSelect
+                        value={String(pageSize)}
+                        onChange={(value) => {
+                          setPageSize(parseInt(value) || 10)
+                          setCurrentPage(1)
+                        }}
+                        options={[
+                          { value: '5', label: '5' },
+                          { value: '10', label: '10' },
+                          { value: '20', label: '20' },
+                          { value: '50', label: '50' }
+                        ]}
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">per page</span>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50"
-                    >
-                      Next
-                    </button>
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        Showing{' '}
+                        <span className="font-medium">
+                          {Math.min((currentPage - 1) * pageSize + 1, Math.max(totalCount, 0))}
+                        </span>
+                        {' '}to{' '}
+                        <span className="font-medium">
+                          {Math.min(currentPage * pageSize, totalCount)}
+                        </span>
+                        {' '}of{' '}
+                        <span className="font-medium">{totalCount}</span>
+                        {' '}results
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex items-center space-x-2">
+                        <button
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                          className={`p-2 rounded-full transition-colors ${currentPage === 1 ? 'text-gray-400 dark:text-gray-600' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                          aria-label="Previous page"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        {getPageNumbers(totalPages, currentPage).map((page, idx) => (
+                          page === -1 ? (
+                            <span key={`ellipsis-${idx}`} className="px-2 text-gray-400">…</span>
+                          ) : (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                                currentPage === page
+                                  ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-white'
+                                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          )
+                        ))}
+                        <button
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                          className={`p-2 rounded-full transition-colors ${currentPage === totalPages ? 'text-gray-400 dark:text-gray-600' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                          aria-label="Next page"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </nav>
+                    </div>
                   </div>
                 </div>
               </div>

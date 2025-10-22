@@ -19,30 +19,8 @@ const websiteSchema = new mongoose.Schema({
     match: [/^https?:\/\/.+/, 'Please enter a valid website URL']
   },
   categories: [{
-    type: String,
-    enum: [
-      'technology',
-      'business',
-      'health',
-      'finance',
-      'education',
-      'lifestyle',
-      'travel',
-      'food',
-      'sports',
-      'entertainment',
-      'news',
-      'fashion',
-      'beauty',
-      'parenting',
-      'home',
-      'automotive',
-      'gaming',
-      'photography',
-      'music',
-      'art',
-      'other'
-    ]
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category'
   }],
   pricing: {
     guestPost: {

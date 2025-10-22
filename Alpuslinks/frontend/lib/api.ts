@@ -202,6 +202,14 @@ class ApiService {
     })
   }
 
+  async getUser(userId: string) {
+    return this.request(`/users/${userId}`)
+  }
+
+  async getUserById(userId: string) {
+    return this.request(`/users/${userId}`)
+  }
+
   // User Meta endpoints
   async getUserMeta() {
     return this.request('/user-meta')
@@ -479,6 +487,10 @@ class ApiService {
     return this.request('/users/stats')
   }
 
+  async getUserActivities(userId: string) {
+    return this.request(`/users/${userId}/activities`)
+  }
+
   async getUserLoginTrends(period: string = '30d') {
     return this.request(`/users/login-trends?period=${period}`)
   }
@@ -689,6 +701,31 @@ class ApiService {
 
   async deleteLinkInsertion(linkInsertionId: string) {
     return this.request(`/link-insertions/${linkInsertionId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Generic HTTP methods for categories and other endpoints
+  async get(endpoint: string) {
+    return this.request(endpoint)
+  }
+
+  async post(endpoint: string, data?: any) {
+    return this.request(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    })
+  }
+
+  async put(endpoint: string, data?: any) {
+    return this.request(endpoint, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    })
+  }
+
+  async delete(endpoint: string) {
+    return this.request(endpoint, {
       method: 'DELETE',
     })
   }
