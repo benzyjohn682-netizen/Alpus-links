@@ -731,6 +731,11 @@ class ApiService {
       method: 'DELETE',
     })
   }
+
+  // Categories methods
+  async getCategories() {
+    return this.get('/categories/all?isActive=true')
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL)

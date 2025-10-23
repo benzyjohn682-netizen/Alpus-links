@@ -15,29 +15,7 @@ import { validateDomain, isLikelyFakeDomain } from '@/lib/domainValidation'
 import { normalizeUrl } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
-// Categories and other data
-const categories = [
-  { value: 'technology', label: 'Technology' },
-  { value: 'business', label: 'Business' },
-  { value: 'health', label: 'Health' },
-  { value: 'finance', label: 'Finance' },
-  { value: 'education', label: 'Education' },
-  { value: 'lifestyle', label: 'Lifestyle' },
-  { value: 'travel', label: 'Travel' },
-  { value: 'food', label: 'Food' },
-  { value: 'sports', label: 'Sports' },
-  { value: 'entertainment', label: 'Entertainment' },
-  { value: 'news', label: 'News' },
-  { value: 'fashion', label: 'Fashion' },
-  { value: 'beauty', label: 'Beauty' },
-  { value: 'parenting', label: 'Parenting' },
-  { value: 'home', label: 'Home & Garden' },
-  { value: 'automotive', label: 'Automotive' },
-  { value: 'gaming', label: 'Gaming' },
-  { value: 'photography', label: 'Photography' },
-  { value: 'music', label: 'Music' },
-  { value: 'art', label: 'Art & Design' }
-]
+// Categories will be fetched from API
 
 const countries = [
   { value: 'United States', label: '🇺🇸 United States' },
@@ -92,6 +70,10 @@ export default function CreateWebsitePage() {
   const [urlCheckResult, setUrlCheckResult] = useState<UrlCheckResult | null>(null)
   const [isCheckingUrl, setIsCheckingUrl] = useState(false)
   
+  // Categories state
+  const [categories, setCategories] = useState<Array<{value: string, label: string}>>([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+  
   // Ownership verification states
   const [ownershipMethod, setOwnershipMethod] = useState<'meta' | 'file' | 'dns' | 'skip'>('meta')
   const [isVerifyingOwnership, setIsVerifyingOwnership] = useState(false)
@@ -116,6 +98,31 @@ export default function CreateWebsitePage() {
     minWordCount: '',
     maxLinks: ''
   })
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoadingCategories(true)
+        const response = await apiService.getCategories()
+        if (response.data && (response.data as any).success) {
+          const categoryData = (response.data as any).data
+          const formattedCategories = categoryData.map((cat: any) => ({
+            value: cat._id,
+            label: cat.name
+          }))
+          setCategories(formattedCategories)
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        toast.error('Failed to load categories')
+      } finally {
+        setIsLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const handleStep1Next = async () => {
     if (!url.trim()) {
@@ -805,12 +812,19 @@ export default function CreateWebsitePage() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Categories *
                       </label>
-                      <MultiSelect
-                        options={categories}
-                        value={formData.categories}
-                        onChange={(value) => setFormData(prev => ({ ...prev, categories: value }))}
-                        placeholder="Select categories"
-                      />
+                      {isLoadingCategories ? (
+                        <div className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Loading categories...
+                        </div>
+                      ) : (
+                        <MultiSelect
+                          options={categories}
+                          value={formData.categories}
+                          onChange={(value) => setFormData(prev => ({ ...prev, categories: value }))}
+                          placeholder="Select categories"
+                        />
+                      )}
                       {errors.categories && (
                         <p className="mt-2 text-sm text-red-600">{errors.categories}</p>
                       )}
