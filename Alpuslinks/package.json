@@ -12,7 +12,8 @@
     "build": "cd frontend && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "echo 'Backend is ready to run - no build step required'",
-    "build:all": "npm run build:frontend && npm run build:backend"
+    "build:all": "npm run build:frontend && npm run build:backend",
+    "vercel-build": "cd frontend && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

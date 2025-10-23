@@ -1,7 +1,9 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
   (typeof window !== 'undefined' && (window.location.hostname === '192.168.138.120' || window.location.hostname === 'alpuslinks.net')
     ? 'http://192.168.138.120:5000/api' 
-    : 'http://localhost:5000/api')
+    : process.env.NODE_ENV === 'production' 
+      ? 'https://your-backend-api-url.com/api'  // Replace with your actual backend URL
+      : 'http://localhost:5000/api')
 
 interface ApiResponse<T> {
   data?: T
