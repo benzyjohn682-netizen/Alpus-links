@@ -3,10 +3,9 @@ import { ProtectedRoute } from '@/components/auth/protected-route'
 import Link from 'next/link'
 import { BarChart3, Plus, Settings, Eye, Globe, Calendar } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { TwoStepWebsiteForm } from '@/components/website/TwoStepWebsiteForm'
 import { useAuth } from '@/contexts/auth-context'
 import { apiService } from '@/lib/api'
-import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 interface Website {
   _id: string
@@ -17,11 +16,11 @@ interface Website {
 }
 
 export default function PublisherDashboardPage() {
-  const [showForm, setShowForm] = useState(false)
   const [websites, setWebsites] = useState<Website[]>([])
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
+  const router = useRouter()
 
   const loadWebsites = async () => {
     if (!user?.id) return
@@ -57,31 +56,8 @@ export default function PublisherDashboardPage() {
     loadStats()
   }, [user?.id])
 
-  const handleCreateWebsite = async (websiteData: any) => {
-    try {
-      console.log('Creating website with data:', websiteData)
-      const response = await apiService.createWebsite(websiteData)
-      console.log('Website creation response:', response)
-      
-      if (response.data) {
-        setShowForm(false)
-        // Refresh data instead of page reload
-        loadWebsites()
-        loadStats()
-        
-        // Dispatch event to update sidebar
-        window.dispatchEvent(new CustomEvent('websiteCreated'))
-        
-        // Show success toast
-        toast.success('Website created successfully!')
-      } else {
-        console.error('No data in response:', response)
-        toast.error('Failed to create website. Please try again.')
-      }
-    } catch (error) {
-      console.error('Failed to create website:', error)
-      toast.error('Failed to create website. Please check the console for details.')
-    }
+  const handleAddWebsite = () => {
+    router.push('/publisher/websites/create')
   }
   return (
     <ProtectedRoute allowedRoles={["publisher"]}>
@@ -118,7 +94,7 @@ export default function PublisherDashboardPage() {
             </Link>
 
             <button
-              onClick={() => setShowForm(true)}
+              onClick={handleAddWebsite}
               className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow w-full text-left"
             >
               <div className="flex items-center">
@@ -261,7 +237,7 @@ export default function PublisherDashboardPage() {
                     Start by adding your first website to see activity here.
                   </p>
                   <button
-                    onClick={() => setShowForm(true)}
+                    onClick={handleAddWebsite}
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -274,13 +250,6 @@ export default function PublisherDashboardPage() {
         </div>
       </div>
 
-      {/* Website Form Modal */}
-      {showForm && (
-        <TwoStepWebsiteForm
-          onSubmit={handleCreateWebsite}
-          onClose={() => setShowForm(false)}
-        />
-      )}
     </ProtectedRoute>
   )
 }
