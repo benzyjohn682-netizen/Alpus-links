@@ -79,7 +79,7 @@ export function CategoryForm({ category, onClose, onSuccess }: CategoryFormProps
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
-      .trim('-')
+      .replace(/^-+|-+$/g, '')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

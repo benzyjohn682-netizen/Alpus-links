@@ -40,7 +40,7 @@ export default function LinkInsertionsPage() {
           sortBy,
           sortOrder
         })
-        setLinkInsertions(data?.linkInsertions || [])
+        setLinkInsertions((data as any)?.linkInsertions || [])
       } catch (error: any) {
         console.error('Load error:', error)
         toast.error(error?.message || 'Failed to load link insertions')

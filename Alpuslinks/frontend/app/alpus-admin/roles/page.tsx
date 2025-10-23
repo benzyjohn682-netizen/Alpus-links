@@ -149,8 +149,7 @@ export default function AdminRolesPage() {
   }
 
   const filteredRoles = roles.filter(role => {
-    const matchesSearch = role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         role.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = role.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterActive === 'all' || 
                          (filterActive === 'active' && role.isActive) ||
                          (filterActive === 'inactive' && !role.isActive) ||
@@ -575,7 +574,7 @@ function RolesTable({ roles, loading, onDelete, onEdit, onToggleActive }: RolesT
                         )}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {role.description}
+                        {role.permissions.length} permissions
                       </div>
                     </div>
                   </div>

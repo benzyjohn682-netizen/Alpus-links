@@ -45,7 +45,7 @@ export default function EditLinkInsertionPage() {
       try {
         setLoading(true)
         const { data } = await apiService.getLinkInsertion(linkInsertionId)
-        const li = data?.linkInsertion
+        const li = data as LinkInsertion
         
         if (!li) {
           toast.error('Link insertion not found')

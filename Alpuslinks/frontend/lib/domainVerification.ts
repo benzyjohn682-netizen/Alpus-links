@@ -50,7 +50,7 @@ export class DomainVerificationService {
 
     try {
       const response = await apiService.verifyDomain(domain)
-      const result = response.data
+      const result = response.data as DomainVerificationResult
 
       // Cache the result
       this.cache.set(cacheKey, {
@@ -158,13 +158,13 @@ export class DomainVerificationService {
     let validEntries = 0
     let expiredEntries = 0
 
-    for (const [key, value] of this.cache.entries()) {
+    this.cache.forEach((value, key) => {
       if (now - value.timestamp < this.cacheTimeout) {
         validEntries++
       } else {
         expiredEntries++
       }
-    }
+    })
 
     return {
       totalEntries: this.cache.size,

@@ -686,7 +686,7 @@ export default function AdminWebsitesPage() {
                   Delete Website
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Are you sure you want to delete <strong>{deletingWebsite.domain || new URL(deletingWebsite.url).hostname.replace('www.', '')}</strong>? 
+                  Are you sure you want to delete <strong>{new URL(deletingWebsite.url).hostname.replace('www.', '')}</strong>? 
                   This action cannot be undone.
                 </p>
               </div>
@@ -920,11 +920,11 @@ function AdminWebsiteTable({
               </th>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                onClick={() => handleSort('name')}
+                onClick={() => handleSort('url')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Website</span>
-                  {sortField === 'name' && (
+                  {sortField === 'url' && (
                     <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </div>
@@ -976,7 +976,7 @@ function AdminWebsiteTable({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex flex-col">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {website.domain || new URL(website.url).hostname.replace('www.', '')}
+                      {new URL(website.url).hostname.replace('www.', '')}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       <a

@@ -83,7 +83,7 @@ export default function UserDetailPage() {
     try {
       setLoading(true)
       const response = await apiService.getUserById(userId)
-      const userData = response.data
+      const userData = response.data as User
       
       if (userData) {
         setUser(userData)

@@ -7,286 +7,103 @@ const bcrypt = require('bcryptjs');
 // Sample websites data
 const sampleWebsites = [
   {
-    name: 'TechCrunch',
     url: 'https://techcrunch.com',
-    description: 'Leading technology news and startup coverage',
-    category: 'technology',
-    domainAuthority: 95,
-    monthlyTraffic: 15000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 5000,
       linkInsertion: 2000
-    },
-    requirements: {
-      minWordCount: 800,
-      maxLinks: 2,
-      allowedTopics: ['technology', 'startups', 'business'],
-      prohibitedTopics: ['gambling', 'adult content', 'cryptocurrency']
-    },
-    contactInfo: {
-      email: 'editor@techcrunch.com',
-      phone: '+1-555-0123'
-    },
-    socialMedia: {
-      twitter: '@techcrunch',
-      linkedin: 'techcrunch',
-      facebook: 'techcrunch'
     }
   },
   {
-    name: 'Mashable',
     url: 'https://mashable.com',
-    description: 'Digital culture and technology news',
-    category: 'technology',
-    domainAuthority: 88,
-    monthlyTraffic: 8000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 3500,
       linkInsertion: 1500
-    },
-    requirements: {
-      minWordCount: 600,
-      maxLinks: 1,
-      allowedTopics: ['technology', 'social media', 'digital culture'],
-      prohibitedTopics: ['gambling', 'adult content']
-    },
-    contactInfo: {
-      email: 'submissions@mashable.com'
-    },
-    socialMedia: {
-      twitter: '@mashable',
-      facebook: 'mashable'
     }
   },
   {
-    name: 'Forbes',
     url: 'https://forbes.com',
-    description: 'Business and financial news',
-    category: 'business',
-    domainAuthority: 98,
-    monthlyTraffic: 25000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 10000,
       linkInsertion: 5000
-    },
-    requirements: {
-      minWordCount: 1000,
-      maxLinks: 1,
-      allowedTopics: ['business', 'finance', 'entrepreneurship'],
-      prohibitedTopics: ['gambling', 'adult content', 'cryptocurrency']
-    },
-    contactInfo: {
-      email: 'contributors@forbes.com'
-    },
-    socialMedia: {
-      twitter: '@forbes',
-      linkedin: 'forbes',
-      facebook: 'forbes'
     }
   },
   {
-    name: 'Healthline',
     url: 'https://healthline.com',
-    description: 'Health and wellness information',
-    category: 'health',
-    domainAuthority: 92,
-    monthlyTraffic: 12000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 4000,
       linkInsertion: 2000
-    },
-    requirements: {
-      minWordCount: 700,
-      maxLinks: 2,
-      allowedTopics: ['health', 'wellness', 'nutrition', 'fitness'],
-      prohibitedTopics: ['gambling', 'adult content', 'unproven treatments']
-    },
-    contactInfo: {
-      email: 'editorial@healthline.com'
-    },
-    socialMedia: {
-      twitter: '@healthline',
-      facebook: 'healthline'
     }
   },
   {
-    name: 'Travel + Leisure',
     url: 'https://travelandleisure.com',
-    description: 'Travel guides and destination information',
-    category: 'travel',
-    domainAuthority: 85,
-    monthlyTraffic: 6000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 3000,
       linkInsertion: 1200
-    },
-    requirements: {
-      minWordCount: 500,
-      maxLinks: 2,
-      allowedTopics: ['travel', 'destinations', 'hotels', 'restaurants'],
-      prohibitedTopics: ['gambling', 'adult content']
-    },
-    contactInfo: {
-      email: 'submissions@travelandleisure.com'
-    },
-    socialMedia: {
-      twitter: '@travelandleisure',
-      facebook: 'travelandleisure'
     }
   },
   {
-    name: 'Food Network',
     url: 'https://foodnetwork.com',
-    description: 'Cooking recipes and food content',
-    category: 'food',
-    domainAuthority: 90,
-    monthlyTraffic: 10000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 2500,
       linkInsertion: 1000
-    },
-    requirements: {
-      minWordCount: 400,
-      maxLinks: 2,
-      allowedTopics: ['cooking', 'recipes', 'food', 'restaurants'],
-      prohibitedTopics: ['gambling', 'adult content']
-    },
-    contactInfo: {
-      email: 'submissions@foodnetwork.com'
-    },
-    socialMedia: {
-      twitter: '@foodnetwork',
-      facebook: 'foodnetwork'
     }
   },
   {
-    name: 'ESPN',
     url: 'https://espn.com',
-    description: 'Sports news and analysis',
-    category: 'sports',
-    domainAuthority: 96,
-    monthlyTraffic: 20000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 8000,
       linkInsertion: 3000
-    },
-    requirements: {
-      minWordCount: 600,
-      maxLinks: 1,
-      allowedTopics: ['sports', 'athletes', 'teams', 'games'],
-      prohibitedTopics: ['gambling', 'adult content']
-    },
-    contactInfo: {
-      email: 'editorial@espn.com'
-    },
-    socialMedia: {
-      twitter: '@espn',
-      facebook: 'espn'
     }
   },
   {
-    name: 'BuzzFeed',
     url: 'https://buzzfeed.com',
-    description: 'Viral content and entertainment',
-    category: 'entertainment',
-    domainAuthority: 89,
-    monthlyTraffic: 15000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 2000,
       linkInsertion: 800
-    },
-    requirements: {
-      minWordCount: 300,
-      maxLinks: 3,
-      allowedTopics: ['entertainment', 'lifestyle', 'viral content'],
-      prohibitedTopics: ['gambling', 'adult content']
-    },
-    contactInfo: {
-      email: 'submissions@buzzfeed.com'
-    },
-    socialMedia: {
-      twitter: '@buzzfeed',
-      facebook: 'buzzfeed'
     }
   },
   {
-    name: 'The Guardian',
     url: 'https://theguardian.com',
-    description: 'International news and opinion',
-    category: 'news',
-    domainAuthority: 97,
-    monthlyTraffic: 18000000,
-    language: 'en',
     country: 'United Kingdom',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 6000,
       linkInsertion: 2500
-    },
-    requirements: {
-      minWordCount: 800,
-      maxLinks: 1,
-      allowedTopics: ['news', 'politics', 'world events', 'opinion'],
-      prohibitedTopics: ['gambling', 'adult content']
-    },
-    contactInfo: {
-      email: 'editor@theguardian.com'
-    },
-    socialMedia: {
-      twitter: '@guardian',
-      facebook: 'theguardian'
     }
   },
   {
-    name: 'Vogue',
     url: 'https://vogue.com',
-    description: 'Fashion and lifestyle magazine',
-    category: 'fashion',
-    domainAuthority: 94,
-    monthlyTraffic: 12000000,
-    language: 'en',
     country: 'United States',
+    language: 'en',
     status: 'active',
     pricing: {
       guestPost: 7000,
       linkInsertion: 3000
-    },
-    requirements: {
-      minWordCount: 600,
-      maxLinks: 1,
-      allowedTopics: ['fashion', 'beauty', 'lifestyle', 'celebrities'],
-      prohibitedTopics: ['gambling', 'adult content']
-    },
-    contactInfo: {
-      email: 'editorial@vogue.com'
-    },
-    socialMedia: {
-      twitter: '@voguemagazine',
-      facebook: 'vogue'
     }
   }
 ];
@@ -340,14 +157,25 @@ async function seedWebsites() {
     // Create sample websites
     let createdCount = 0;
     for (const websiteData of sampleWebsites) {
+      // Extract domain from URL
+      let domain = '';
+      try {
+        const urlObj = new URL(websiteData.url);
+        domain = urlObj.hostname.replace('www.', '');
+      } catch (error) {
+        console.error(`❌ Invalid URL: ${websiteData.url}`);
+        continue;
+      }
+
       const website = new Website({
         ...websiteData,
+        domain: domain,
         publisherId: publisherUser._id
       });
       
       await website.save();
       createdCount++;
-      console.log(`✅ Created website: ${websiteData.name}`);
+      console.log(`✅ Created website: ${websiteData.url} (${domain})`);
     }
 
     console.log(`🎉 Successfully created ${createdCount} sample websites!`);

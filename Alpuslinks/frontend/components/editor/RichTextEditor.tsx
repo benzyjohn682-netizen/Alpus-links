@@ -483,10 +483,6 @@ export default function RichTextEditor({
           placeholder={placeholder}
           readOnly={readOnly}
           style={{ height: 'auto' }}
-          onError={(error) => {
-            console.error('ReactQuill error:', error)
-            setLoadError(true)
-          }}
         />
       )}
       </div>
