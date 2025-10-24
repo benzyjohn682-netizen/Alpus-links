@@ -255,7 +255,10 @@ export function WebsiteTable({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {websites.map((website) => (
+            {websites.map((website) => {
+              // Debug logging
+              console.log('Website categories for', website.domain, ':', website.categories);
+              return (
               <tr key={website._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex flex-col">
@@ -402,7 +405,8 @@ export function WebsiteTable({
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
