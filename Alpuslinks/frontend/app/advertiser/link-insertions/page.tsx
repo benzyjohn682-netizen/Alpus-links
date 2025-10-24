@@ -3,7 +3,7 @@
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Edit3, Trash2, Eye, ExternalLink, Link, Calendar, Filter, Search } from 'lucide-react'
+import { Plus, Edit3, Trash2, Eye, ExternalLink, Link, Calendar, Filter, Search, AlertTriangle, X } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
 
@@ -28,6 +28,8 @@ export default function LinkInsertionsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('updatedAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [linkInsertionToDelete, setLinkInsertionToDelete] = useState<LinkInsertion | null>(null)
 
   // Load link insertions
   useEffect(() => {
@@ -52,17 +54,29 @@ export default function LinkInsertionsPage() {
     loadLinkInsertions()
   }, [searchTerm, statusFilter, sortBy, sortOrder])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this link insertion?')) return
+  const handleDeleteClick = (linkInsertion: LinkInsertion) => {
+    setLinkInsertionToDelete(linkInsertion)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!linkInsertionToDelete) return
     
     try {
-      await apiService.deleteLinkInsertion(id)
-      setLinkInsertions(prev => prev.filter(li => li.id !== id))
+      await apiService.deleteLinkInsertion(linkInsertionToDelete.id)
+      setLinkInsertions(prev => prev.filter(li => li.id !== linkInsertionToDelete.id))
       toast.success('Link insertion deleted')
+      setShowDeleteModal(false)
+      setLinkInsertionToDelete(null)
     } catch (error: any) {
       console.error('Delete error:', error)
       toast.error(error?.message || 'Failed to delete link insertion')
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setLinkInsertionToDelete(null)
   }
 
   const getStatusColor = (status: string) => {
@@ -240,7 +254,7 @@ export default function LinkInsertionsPage() {
                         </button>
                         
                         <button
-                          onClick={() => handleDelete(li.id)}
+                          onClick={() => handleDeleteClick(li)}
                           className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
                           title="Delete link insertion"
                         >
@@ -269,6 +283,72 @@ export default function LinkInsertionsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteModal && linkInsertionToDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">
+                        <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Delete Link Insertion
+                      </h3>
+                    </div>
+                    <button
+                      onClick={handleDeleteCancel}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                  </div>
+
+                  {/* Content */}
+                  <div className="mb-6">
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Are you sure you want to delete this link insertion? This action cannot be undone.
+                    </p>
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg flex items-center justify-center">
+                          <Link className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {linkInsertionToDelete.anchorText}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {linkInsertionToDelete.anchorUrl}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleDeleteCancel}
+                      className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteConfirm}
+                      className="flex-1 px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -382,14 +382,22 @@ class ApiService {
       guestPost?: number
       linkInsertion?: number
       writingGuestPost?: number
+      extraLinks?: number
     }
     turnaroundTimeDays: number
     country: string
     language: string
+    requirements?: {
+      minWordCount?: number
+      maxLinks?: number
+    }
     ownershipVerification?: {
       method?: string
       verified?: boolean
       role?: string
+      metaTagContent?: string
+      fileName?: string
+      dnsRecord?: string
     }
   }) {
     return this.request('/websites', {

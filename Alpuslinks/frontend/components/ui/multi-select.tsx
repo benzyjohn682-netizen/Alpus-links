@@ -90,7 +90,7 @@ export function MultiSelect({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <div
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 cursor-pointer"
+        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 cursor-pointer"
         onClick={(e) => {
           // Only open dropdown if clicking on the container itself, not on tags or buttons
           if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.category-tag')) {

@@ -226,7 +226,7 @@ export default function CreateWebsitePage() {
         turnaroundTimeDays: parseInt(formData.tatDays) || 7,
         country: formData.country,
         language: formData.language,
-        meta: {
+        requirements: {
           ...(formData.minWordCount && { minWordCount: parseInt(formData.minWordCount) }),
           ...(formData.maxLinks && { maxLinks: parseInt(formData.maxLinks) })
         },

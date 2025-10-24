@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { apiService } from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
 import { DefaultAvatar } from '@/components/ui/DefaultAvatar'
-import { X, Camera, Upload, Search, ChevronDown } from 'lucide-react'
+import CountrySelect from '@/components/ui/country-select'
+import LanguageSelect from '@/components/ui/language-select'
+import { X, Camera, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function AccountForm() {
@@ -23,265 +25,8 @@ export default function AccountForm() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [saving, setSaving] = useState(false)
-  const [countrySearch, setCountrySearch] = useState('')
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const countryDropdownRef = useRef<HTMLDivElement | null>(null)
 
-  // Comprehensive list of countries
-  const countries = [
-    { code: 'AF', name: 'Afghanistan' },
-    { code: 'AL', name: 'Albania' },
-    { code: 'DZ', name: 'Algeria' },
-    { code: 'AS', name: 'American Samoa' },
-    { code: 'AD', name: 'Andorra' },
-    { code: 'AO', name: 'Angola' },
-    { code: 'AI', name: 'Anguilla' },
-    { code: 'AQ', name: 'Antarctica' },
-    { code: 'AG', name: 'Antigua and Barbuda' },
-    { code: 'AR', name: 'Argentina' },
-    { code: 'AM', name: 'Armenia' },
-    { code: 'AW', name: 'Aruba' },
-    { code: 'AU', name: 'Australia' },
-    { code: 'AT', name: 'Austria' },
-    { code: 'AZ', name: 'Azerbaijan' },
-    { code: 'BS', name: 'Bahamas' },
-    { code: 'BH', name: 'Bahrain' },
-    { code: 'BD', name: 'Bangladesh' },
-    { code: 'BB', name: 'Barbados' },
-    { code: 'BY', name: 'Belarus' },
-    { code: 'BE', name: 'Belgium' },
-    { code: 'BZ', name: 'Belize' },
-    { code: 'BJ', name: 'Benin' },
-    { code: 'BM', name: 'Bermuda' },
-    { code: 'BT', name: 'Bhutan' },
-    { code: 'BO', name: 'Bolivia' },
-    { code: 'BA', name: 'Bosnia and Herzegovina' },
-    { code: 'BW', name: 'Botswana' },
-    { code: 'BV', name: 'Bouvet Island' },
-    { code: 'BR', name: 'Brazil' },
-    { code: 'IO', name: 'British Indian Ocean Territory' },
-    { code: 'BN', name: 'Brunei Darussalam' },
-    { code: 'BG', name: 'Bulgaria' },
-    { code: 'BF', name: 'Burkina Faso' },
-    { code: 'BI', name: 'Burundi' },
-    { code: 'KH', name: 'Cambodia' },
-    { code: 'CM', name: 'Cameroon' },
-    { code: 'CA', name: 'Canada' },
-    { code: 'CV', name: 'Cape Verde' },
-    { code: 'KY', name: 'Cayman Islands' },
-    { code: 'CF', name: 'Central African Republic' },
-    { code: 'TD', name: 'Chad' },
-    { code: 'CL', name: 'Chile' },
-    { code: 'CN', name: 'China' },
-    { code: 'CX', name: 'Christmas Island' },
-    { code: 'CC', name: 'Cocos (Keeling) Islands' },
-    { code: 'CO', name: 'Colombia' },
-    { code: 'KM', name: 'Comoros' },
-    { code: 'CG', name: 'Congo' },
-    { code: 'CD', name: 'Congo, Democratic Republic of the' },
-    { code: 'CK', name: 'Cook Islands' },
-    { code: 'CR', name: 'Costa Rica' },
-    { code: 'CI', name: 'Côte d\'Ivoire' },
-    { code: 'HR', name: 'Croatia' },
-    { code: 'CU', name: 'Cuba' },
-    { code: 'CY', name: 'Cyprus' },
-    { code: 'CZ', name: 'Czech Republic' },
-    { code: 'DK', name: 'Denmark' },
-    { code: 'DJ', name: 'Djibouti' },
-    { code: 'DM', name: 'Dominica' },
-    { code: 'DO', name: 'Dominican Republic' },
-    { code: 'EC', name: 'Ecuador' },
-    { code: 'EG', name: 'Egypt' },
-    { code: 'SV', name: 'El Salvador' },
-    { code: 'GQ', name: 'Equatorial Guinea' },
-    { code: 'ER', name: 'Eritrea' },
-    { code: 'EE', name: 'Estonia' },
-    { code: 'ET', name: 'Ethiopia' },
-    { code: 'FK', name: 'Falkland Islands (Malvinas)' },
-    { code: 'FO', name: 'Faroe Islands' },
-    { code: 'FJ', name: 'Fiji' },
-    { code: 'FI', name: 'Finland' },
-    { code: 'FR', name: 'France' },
-    { code: 'GF', name: 'French Guiana' },
-    { code: 'PF', name: 'French Polynesia' },
-    { code: 'TF', name: 'French Southern Territories' },
-    { code: 'GA', name: 'Gabon' },
-    { code: 'GM', name: 'Gambia' },
-    { code: 'GE', name: 'Georgia' },
-    { code: 'DE', name: 'Germany' },
-    { code: 'GH', name: 'Ghana' },
-    { code: 'GI', name: 'Gibraltar' },
-    { code: 'GR', name: 'Greece' },
-    { code: 'GL', name: 'Greenland' },
-    { code: 'GD', name: 'Grenada' },
-    { code: 'GP', name: 'Guadeloupe' },
-    { code: 'GU', name: 'Guam' },
-    { code: 'GT', name: 'Guatemala' },
-    { code: 'GG', name: 'Guernsey' },
-    { code: 'GN', name: 'Guinea' },
-    { code: 'GW', name: 'Guinea-Bissau' },
-    { code: 'GY', name: 'Guyana' },
-    { code: 'HT', name: 'Haiti' },
-    { code: 'HM', name: 'Heard Island and McDonald Islands' },
-    { code: 'VA', name: 'Holy See (Vatican City State)' },
-    { code: 'HN', name: 'Honduras' },
-    { code: 'HK', name: 'Hong Kong' },
-    { code: 'HU', name: 'Hungary' },
-    { code: 'IS', name: 'Iceland' },
-    { code: 'IN', name: 'India' },
-    { code: 'ID', name: 'Indonesia' },
-    { code: 'IR', name: 'Iran, Islamic Republic of' },
-    { code: 'IQ', name: 'Iraq' },
-    { code: 'IE', name: 'Ireland' },
-    { code: 'IM', name: 'Isle of Man' },
-    { code: 'IL', name: 'Israel' },
-    { code: 'IT', name: 'Italy' },
-    { code: 'JM', name: 'Jamaica' },
-    { code: 'JP', name: 'Japan' },
-    { code: 'JE', name: 'Jersey' },
-    { code: 'JO', name: 'Jordan' },
-    { code: 'KZ', name: 'Kazakhstan' },
-    { code: 'KE', name: 'Kenya' },
-    { code: 'KI', name: 'Kiribati' },
-    { code: 'KP', name: 'Korea, Democratic People\'s Republic of' },
-    { code: 'KR', name: 'Korea, Republic of' },
-    { code: 'KW', name: 'Kuwait' },
-    { code: 'KG', name: 'Kyrgyzstan' },
-    { code: 'LA', name: 'Lao People\'s Democratic Republic' },
-    { code: 'LV', name: 'Latvia' },
-    { code: 'LB', name: 'Lebanon' },
-    { code: 'LS', name: 'Lesotho' },
-    { code: 'LR', name: 'Liberia' },
-    { code: 'LY', name: 'Libya' },
-    { code: 'LI', name: 'Liechtenstein' },
-    { code: 'LT', name: 'Lithuania' },
-    { code: 'LU', name: 'Luxembourg' },
-    { code: 'MO', name: 'Macao' },
-    { code: 'MK', name: 'Macedonia, the former Yugoslav Republic of' },
-    { code: 'MG', name: 'Madagascar' },
-    { code: 'MW', name: 'Malawi' },
-    { code: 'MY', name: 'Malaysia' },
-    { code: 'MV', name: 'Maldives' },
-    { code: 'ML', name: 'Mali' },
-    { code: 'MT', name: 'Malta' },
-    { code: 'MH', name: 'Marshall Islands' },
-    { code: 'MQ', name: 'Martinique' },
-    { code: 'MR', name: 'Mauritania' },
-    { code: 'MU', name: 'Mauritius' },
-    { code: 'YT', name: 'Mayotte' },
-    { code: 'MX', name: 'Mexico' },
-    { code: 'FM', name: 'Micronesia, Federated States of' },
-    { code: 'MD', name: 'Moldova, Republic of' },
-    { code: 'MC', name: 'Monaco' },
-    { code: 'MN', name: 'Mongolia' },
-    { code: 'ME', name: 'Montenegro' },
-    { code: 'MS', name: 'Montserrat' },
-    { code: 'MA', name: 'Morocco' },
-    { code: 'MZ', name: 'Mozambique' },
-    { code: 'MM', name: 'Myanmar' },
-    { code: 'NA', name: 'Namibia' },
-    { code: 'NR', name: 'Nauru' },
-    { code: 'NP', name: 'Nepal' },
-    { code: 'NL', name: 'Netherlands' },
-    { code: 'NC', name: 'New Caledonia' },
-    { code: 'NZ', name: 'New Zealand' },
-    { code: 'NI', name: 'Nicaragua' },
-    { code: 'NE', name: 'Niger' },
-    { code: 'NG', name: 'Nigeria' },
-    { code: 'NU', name: 'Niue' },
-    { code: 'NF', name: 'Norfolk Island' },
-    { code: 'MP', name: 'Northern Mariana Islands' },
-    { code: 'NO', name: 'Norway' },
-    { code: 'OM', name: 'Oman' },
-    { code: 'PK', name: 'Pakistan' },
-    { code: 'PW', name: 'Palau' },
-    { code: 'PS', name: 'Palestine, State of' },
-    { code: 'PA', name: 'Panama' },
-    { code: 'PG', name: 'Papua New Guinea' },
-    { code: 'PY', name: 'Paraguay' },
-    { code: 'PE', name: 'Peru' },
-    { code: 'PH', name: 'Philippines' },
-    { code: 'PN', name: 'Pitcairn' },
-    { code: 'PL', name: 'Poland' },
-    { code: 'PT', name: 'Portugal' },
-    { code: 'PR', name: 'Puerto Rico' },
-    { code: 'QA', name: 'Qatar' },
-    { code: 'RE', name: 'Réunion' },
-    { code: 'RO', name: 'Romania' },
-    { code: 'RU', name: 'Russian Federation' },
-    { code: 'RW', name: 'Rwanda' },
-    { code: 'BL', name: 'Saint Barthélemy' },
-    { code: 'SH', name: 'Saint Helena, Ascension and Tristan da Cunha' },
-    { code: 'KN', name: 'Saint Kitts and Nevis' },
-    { code: 'LC', name: 'Saint Lucia' },
-    { code: 'MF', name: 'Saint Martin (French part)' },
-    { code: 'PM', name: 'Saint Pierre and Miquelon' },
-    { code: 'VC', name: 'Saint Vincent and the Grenadines' },
-    { code: 'WS', name: 'Samoa' },
-    { code: 'SM', name: 'San Marino' },
-    { code: 'ST', name: 'Sao Tome and Principe' },
-    { code: 'SA', name: 'Saudi Arabia' },
-    { code: 'SN', name: 'Senegal' },
-    { code: 'RS', name: 'Serbia' },
-    { code: 'SC', name: 'Seychelles' },
-    { code: 'SL', name: 'Sierra Leone' },
-    { code: 'SG', name: 'Singapore' },
-    { code: 'SX', name: 'Sint Maarten (Dutch part)' },
-    { code: 'SK', name: 'Slovakia' },
-    { code: 'SI', name: 'Slovenia' },
-    { code: 'SB', name: 'Solomon Islands' },
-    { code: 'SO', name: 'Somalia' },
-    { code: 'ZA', name: 'South Africa' },
-    { code: 'GS', name: 'South Georgia and the South Sandwich Islands' },
-    { code: 'SS', name: 'South Sudan' },
-    { code: 'ES', name: 'Spain' },
-    { code: 'LK', name: 'Sri Lanka' },
-    { code: 'SD', name: 'Sudan' },
-    { code: 'SR', name: 'Suriname' },
-    { code: 'SJ', name: 'Svalbard and Jan Mayen' },
-    { code: 'SZ', name: 'Swaziland' },
-    { code: 'SE', name: 'Sweden' },
-    { code: 'CH', name: 'Switzerland' },
-    { code: 'SY', name: 'Syrian Arab Republic' },
-    { code: 'TW', name: 'Taiwan, Province of China' },
-    { code: 'TJ', name: 'Tajikistan' },
-    { code: 'TZ', name: 'Tanzania, United Republic of' },
-    { code: 'TH', name: 'Thailand' },
-    { code: 'TL', name: 'Timor-Leste' },
-    { code: 'TG', name: 'Togo' },
-    { code: 'TK', name: 'Tokelau' },
-    { code: 'TO', name: 'Tonga' },
-    { code: 'TT', name: 'Trinidad and Tobago' },
-    { code: 'TN', name: 'Tunisia' },
-    { code: 'TR', name: 'Turkey' },
-    { code: 'TM', name: 'Turkmenistan' },
-    { code: 'TC', name: 'Turks and Caicos Islands' },
-    { code: 'TV', name: 'Tuvalu' },
-    { code: 'UG', name: 'Uganda' },
-    { code: 'UA', name: 'Ukraine' },
-    { code: 'AE', name: 'United Arab Emirates' },
-    { code: 'GB', name: 'United Kingdom' },
-    { code: 'US', name: 'United States' },
-    { code: 'UM', name: 'United States Minor Outlying Islands' },
-    { code: 'UY', name: 'Uruguay' },
-    { code: 'UZ', name: 'Uzbekistan' },
-    { code: 'VU', name: 'Vanuatu' },
-    { code: 'VE', name: 'Venezuela, Bolivarian Republic of' },
-    { code: 'VN', name: 'Viet Nam' },
-    { code: 'VG', name: 'Virgin Islands, British' },
-    { code: 'VI', name: 'Virgin Islands, U.S.' },
-    { code: 'WF', name: 'Wallis and Futuna' },
-    { code: 'EH', name: 'Western Sahara' },
-    { code: 'YE', name: 'Yemen' },
-    { code: 'ZM', name: 'Zambia' },
-    { code: 'ZW', name: 'Zimbabwe' }
-  ]
-
-  // Filter countries based on search
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(countrySearch.toLowerCase())
-  )
 
   useEffect(() => {
     if (user) {
@@ -292,26 +37,6 @@ export default function AccountForm() {
     }
   }, [user])
 
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (countryDropdownRef.current && !countryDropdownRef.current.contains(event.target as Node)) {
-        setShowCountryDropdown(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
-
-  // Update country search when country changes
-  useEffect(() => {
-    if (country) {
-      setCountrySearch(country)
-    }
-  }, [country])
 
   const loadUserMeta = async () => {
     try {
@@ -544,48 +269,12 @@ export default function AccountForm() {
                 Country
               </label>
             </div>
-            <div className="flex-1 relative" ref={countryDropdownRef}>
-              <div className="relative">
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white pr-10"
-                  placeholder="Search countries..."
-                  value={countrySearch}
-                  onChange={(e) => {
-                    setCountrySearch(e.target.value)
-                    setShowCountryDropdown(true)
-                  }}
-                  onFocus={() => setShowCountryDropdown(true)}
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <Search className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-              
-              {showCountryDropdown && (
-                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {filteredCountries.length > 0 ? (
-                    filteredCountries.map((countryItem) => (
-                      <button
-                        key={countryItem.code}
-                        type="button"
-                        className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600 focus:outline-none"
-                        onClick={() => {
-                          setCountry(countryItem.name)
-                          setCountrySearch(countryItem.name)
-                          setShowCountryDropdown(false)
-                        }}
-                      >
-                        {countryItem.name}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-2 text-gray-500 dark:text-gray-400">
-                      No countries found
-                    </div>
-                  )}
-                </div>
-              )}
+            <div className="flex-1">
+              <CountrySelect
+                value={country}
+                onChange={setCountry}
+                placeholder="Select country"
+              />
             </div>
           </div>
 
@@ -658,73 +347,13 @@ export default function AccountForm() {
                      </label>
                    </div>
                    <div className="flex-1">
-                     <select
-                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                     <LanguageSelect
                        value={language}
-                       onChange={e => setLanguage(e.target.value)}
-                     >
-                       <option value="">Select language...</option>
-            <option value="English">English</option>
-            <option value="Spanish">Spanish</option>
-            <option value="French">French</option>
-            <option value="German">German</option>
-            <option value="Italian">Italian</option>
-            <option value="Portuguese">Portuguese</option>
-            <option value="Russian">Russian</option>
-            <option value="Japanese">Japanese</option>
-            <option value="Korean">Korean</option>
-                       <option value="Chinese">Chinese</option>
-            <option value="Arabic">Arabic</option>
-            <option value="Hindi">Hindi</option>
-            <option value="Dutch">Dutch</option>
-            <option value="Swedish">Swedish</option>
-            <option value="Norwegian">Norwegian</option>
-            <option value="Danish">Danish</option>
-            <option value="Finnish">Finnish</option>
-            <option value="Polish">Polish</option>
-            <option value="Turkish">Turkish</option>
-            <option value="Thai">Thai</option>
-            <option value="Vietnamese">Vietnamese</option>
-            <option value="Indonesian">Indonesian</option>
-            <option value="Malay">Malay</option>
-                       <option value="Filipino">Filipino</option>
-                       <option value="Hebrew">Hebrew</option>
-                       <option value="Ukrainian">Ukrainian</option>
-                       <option value="Czech">Czech</option>
-                       <option value="Hungarian">Hungarian</option>
-                       <option value="Romanian">Romanian</option>
-                       <option value="Bulgarian">Bulgarian</option>
-                       <option value="Croatian">Croatian</option>
-                       <option value="Slovak">Slovak</option>
-                       <option value="Slovenian">Slovenian</option>
-                       <option value="Estonian">Estonian</option>
-                       <option value="Latvian">Latvian</option>
-                       <option value="Lithuanian">Lithuanian</option>
-                       <option value="Greek">Greek</option>
-                       <option value="Icelandic">Icelandic</option>
-                       <option value="Irish">Irish</option>
-                       <option value="Welsh">Welsh</option>
-                       <option value="Maltese">Maltese</option>
-                       <option value="Catalan">Catalan</option>
-                       <option value="Basque">Basque</option>
-                       <option value="Galician">Galician</option>
-                       <option value="Afrikaans">Afrikaans</option>
-                       <option value="Swahili">Swahili</option>
-                       <option value="Amharic">Amharic</option>
-                       <option value="Bengali">Bengali</option>
-                       <option value="Gujarati">Gujarati</option>
-                       <option value="Kannada">Kannada</option>
-                       <option value="Malayalam">Malayalam</option>
-                       <option value="Marathi">Marathi</option>
-                       <option value="Nepali">Nepali</option>
-                       <option value="Punjabi">Punjabi</option>
-                       <option value="Sinhala">Sinhala</option>
-                       <option value="Tamil">Tamil</option>
-                       <option value="Telugu">Telugu</option>
-                       <option value="Urdu">Urdu</option>
-          </select>
-        </div>
-      </div>
+                       onChange={setLanguage}
+                       placeholder="Select language"
+                     />
+                   </div>
+                 </div>
 
                  {/* Birthday Row */}
                  <div className="flex items-center">
