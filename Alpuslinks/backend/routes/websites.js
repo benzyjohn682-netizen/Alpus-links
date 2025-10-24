@@ -23,7 +23,19 @@ router.get('/publisher/:publisherId', auth, async (req, res) => {
     
     // Add filters
     if (status) query.status = status;
-    if (category) query.categories = { $in: [category] };
+    if (category) {
+      // Check if category is a valid ObjectId, if not, try to find category by name
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        query.categories = { $in: [category] };
+      } else {
+        // If category is a string (name), find the category ObjectId first
+        const Category = require('../models/Category');
+        const categoryDoc = await Category.findOne({ name: category, isActive: true });
+        if (categoryDoc) {
+          query.categories = { $in: [categoryDoc._id] };
+        }
+      }
+    }
     if (search) {
       query.$or = [
         { domain: { $regex: search, $options: 'i' } },
@@ -100,7 +112,19 @@ router.get('/advertiser/websites', auth, async (req, res) => {
     }
 
     // Add filters
-    if (category) query.category = category;
+    if (category) {
+      // Check if category is a valid ObjectId, if not, try to find category by name
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        query.categories = { $in: [category] };
+      } else {
+        // If category is a string (name), find the category ObjectId first
+        const Category = require('../models/Category');
+        const categoryDoc = await Category.findOne({ name: category, isActive: true });
+        if (categoryDoc) {
+          query.categories = { $in: [categoryDoc._id] };
+        }
+      }
+    }
     if (country) query.country = { $regex: country, $options: 'i' };
     if (language) query.language = language;
     
@@ -224,7 +248,19 @@ router.get('/admin/all', auth, async (req, res) => {
     
     // Add filters
     if (status) query.status = status;
-    if (category) query.category = category;
+    if (category) {
+      // Check if category is a valid ObjectId, if not, try to find category by name
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        query.categories = { $in: [category] };
+      } else {
+        // If category is a string (name), find the category ObjectId first
+        const Category = require('../models/Category');
+        const categoryDoc = await Category.findOne({ name: category, isActive: true });
+        if (categoryDoc) {
+          query.categories = { $in: [categoryDoc._id] };
+        }
+      }
+    }
     if (publisherId) query.publisherId = publisherId;
     if (search) {
       query.$or = [

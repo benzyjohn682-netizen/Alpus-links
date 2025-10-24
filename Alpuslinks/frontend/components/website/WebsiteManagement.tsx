@@ -94,6 +94,7 @@ export function WebsiteManagement() {
   const [totalPages, setTotalPages] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalItems, setTotalItems] = useState(0)
+  const [categories, setCategories] = useState<Array<{_id: string, name: string, slug: string}>>([])
   const [filters, setFilters] = useState({
     status: '',
     category: '',
@@ -150,6 +151,17 @@ export function WebsiteManagement() {
     }
   }
 
+  const loadCategories = async () => {
+    try {
+      const response = await apiService.getCategories()
+      if (response.data && (response.data as any).success) {
+        setCategories((response.data as any).data || [])
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err)
+    }
+  }
+
   useEffect(() => {
     loadWebsites()
   }, [user?.id, currentPage, pageSize, filters])
@@ -157,6 +169,10 @@ export function WebsiteManagement() {
   useEffect(() => {
     loadStats()
   }, [user?.id])
+
+  useEffect(() => {
+    loadCategories()
+  }, [])
 
 
   const handleDeleteWebsite = async (websiteId: string) => {
@@ -268,18 +284,10 @@ export function WebsiteManagement() {
               <CustomSelect
                 options={[
                   { value: '', label: 'All Categories' },
-                  { value: 'technology', label: '💻 Technology' },
-                  { value: 'business', label: '💼 Business' },
-                  { value: 'health', label: '🏥 Health' },
-                  { value: 'finance', label: '💰 Finance' },
-                  { value: 'education', label: '🎓 Education' },
-                  { value: 'lifestyle', label: '🌟 Lifestyle' },
-                  { value: 'travel', label: '✈️ Travel' },
-                  { value: 'food', label: '🍽️ Food' },
-                  { value: 'sports', label: '⚽ Sports' },
-                  { value: 'entertainment', label: '🎬 Entertainment' },
-                  { value: 'news', label: '📰 News' },
-                  { value: 'other', label: '🔖 Other' }
+                  ...categories.map(category => ({
+                    value: category.name,
+                    label: `${category.name.charAt(0).toUpperCase() + category.name.slice(1)}`
+                  }))
                 ]}
                 value={filters.category}
                 onChange={(value) => handleFilterChange({ category: value })}
