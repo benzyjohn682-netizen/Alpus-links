@@ -31,6 +31,10 @@ const websiteSchema = new mongoose.Schema({
       type: Number,
       min: [0, 'Link insertion price cannot be negative']
     },
+    extraLinks: {
+      type: Number,
+      min: [0, 'Extra links price cannot be negative']
+    },
     writingGuestPost: {
       type: Number,
       min: [0, 'Writing + guest post price cannot be negative']

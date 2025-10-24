@@ -92,6 +92,7 @@ export default function CreateWebsitePage() {
     guestPostPrice: '',
     linkInsertionPrice: '',
     writingGuestPostPrice: '',
+    extraLinksPrice: '',
     tatDays: '',
     country: '',
     language: 'en',
@@ -251,6 +252,7 @@ export default function CreateWebsitePage() {
         pricing: {
           ...(formData.guestPostPrice && { guestPost: parseFloat(formData.guestPostPrice) }),
           ...(formData.linkInsertionPrice && { linkInsertion: parseFloat(formData.linkInsertionPrice) }),
+          ...(formData.extraLinksPrice && { extraLinks: parseFloat(formData.extraLinksPrice) }),
           ...(formData.writingGuestPostPrice && { writingGuestPost: parseFloat(formData.writingGuestPostPrice) })
         },
         turnaroundTimeDays: parseInt(formData.tatDays) || 7,
@@ -795,172 +797,234 @@ export default function CreateWebsitePage() {
             </div>
           )}
 
-              {/* Step 3: Set Details */}
-              {currentStep === 3 && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      Set Website Details
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Configure your website's categories, pricing, and requirements.
-                    </p>
-                  </div>
+               {/* Step 3: Set Details */}
+               {currentStep === 3 && (
+                 <div className="p-6">
+                   <div className="mb-6">
+                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Set Website Details</h3>
+                     <p className="text-sm text-gray-600 dark:text-gray-400">
+                       Configure your website's categories, pricing, and requirements.
+                     </p>
+                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Categories *
-                      </label>
-                      {isLoadingCategories ? (
-                        <div className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Loading categories...
-                        </div>
-                      ) : (
-                        <MultiSelect
-                          options={categories}
-                          value={formData.categories}
-                          onChange={(value) => setFormData(prev => ({ ...prev, categories: value }))}
-                          placeholder="Select categories"
-                        />
-                      )}
-                      {errors.categories && (
-                        <p className="mt-2 text-sm text-red-600">{errors.categories}</p>
-                      )}
-                    </div>
+                   <div className="space-y-6">
+                     {/* Categories Row */}
+                     <div className="flex items-start">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Categories *
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         {isLoadingCategories ? (
+                           <div className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center">
+                             <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                             Loading categories...
+                           </div>
+                         ) : (
+                           <MultiSelect
+                             options={categories}
+                             value={formData.categories}
+                             onChange={(value) => setFormData(prev => ({ ...prev, categories: value }))}
+                             placeholder="Select categories"
+                           />
+                         )}
+                         {errors.categories && (
+                           <p className="mt-2 text-sm text-red-600">{errors.categories}</p>
+                         )}
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Country *
-                      </label>
-                      <CustomSelect
-                        options={countries}
-                        value={formData.country}
-                        onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
-                        placeholder="Select country"
-                      />
-                      {errors.country && (
-                        <p className="mt-2 text-sm text-red-600">{errors.country}</p>
-                      )}
-                    </div>
+                     {/* Country Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Country *
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <CustomSelect
+                           options={countries}
+                           value={formData.country}
+                           onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+                           placeholder="Select country"
+                         />
+                         {errors.country && (
+                           <p className="mt-2 text-sm text-red-600">{errors.country}</p>
+                         )}
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Language
-                      </label>
-                      <CustomSelect
-                        options={languages}
-                        value={formData.language}
-                        onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
-                        placeholder="Select language"
-                      />
-                    </div>
+                     {/* Language Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Language
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <CustomSelect
+                           options={languages}
+                           value={formData.language}
+                           onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+                           placeholder="Select language"
+                         />
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Turnaround Time (Days)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.tatDays}
-                        onChange={(e) => setFormData(prev => ({ ...prev, tatDays: e.target.value }))}
-                        placeholder="7"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-                      />
-                    </div>
+                     {/* Turnaround Time Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Turnaround Time (Days)
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <input
+                           type="number"
+                           value={formData.tatDays}
+                           onChange={(e) => setFormData(prev => ({ ...prev, tatDays: e.target.value }))}
+                           placeholder="7"
+                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                         />
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Guest Post Price ($)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.guestPostPrice}
-                        onChange={(e) => setFormData(prev => ({ ...prev, guestPostPrice: e.target.value }))}
-                        placeholder="0"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-                      />
-                    </div>
+                     {/* Guest Post Price Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Guest Post Price ($)
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <input
+                           type="number"
+                           value={formData.guestPostPrice}
+                           onChange={(e) => setFormData(prev => ({ ...prev, guestPostPrice: e.target.value }))}
+                           placeholder="0"
+                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                         />
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Link Insertion Price ($)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.linkInsertionPrice}
-                        onChange={(e) => setFormData(prev => ({ ...prev, linkInsertionPrice: e.target.value }))}
-                        placeholder="0"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-                      />
-                    </div>
+                     {/* Link Insertion Price Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Link Insertion Price ($)
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <input
+                           type="number"
+                           value={formData.linkInsertionPrice}
+                           onChange={(e) => setFormData(prev => ({ ...prev, linkInsertionPrice: e.target.value }))}
+                           placeholder="0"
+                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                         />
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Writing + Guest Post Price ($)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.writingGuestPostPrice}
-                        onChange={(e) => setFormData(prev => ({ ...prev, writingGuestPostPrice: e.target.value }))}
-                        placeholder="0"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-                      />
-                    </div>
+                     {/* Extra Links Price Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Extra Links Price ($)
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <input
+                           type="number"
+                           value={formData.extraLinksPrice}
+                           onChange={(e) => setFormData(prev => ({ ...prev, extraLinksPrice: e.target.value }))}
+                           placeholder="0"
+                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                         />
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Minimum Word Count
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.minWordCount}
-                        onChange={(e) => setFormData(prev => ({ ...prev, minWordCount: e.target.value }))}
-                        placeholder="500"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-                      />
-                    </div>
+                     {/* Writing + Guest Post Price Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Writing + Guest Post Price ($)
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <input
+                           type="number"
+                           value={formData.writingGuestPostPrice}
+                           onChange={(e) => setFormData(prev => ({ ...prev, writingGuestPostPrice: e.target.value }))}
+                           placeholder="0"
+                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                         />
+                       </div>
+                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Maximum Links
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.maxLinks}
-                        onChange={(e) => setFormData(prev => ({ ...prev, maxLinks: e.target.value }))}
-                        placeholder="3"
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-                      />
-                    </div>
-                  </div>
+                     {/* Minimum Word Count Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Minimum Word Count
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <input
+                           type="number"
+                           value={formData.minWordCount}
+                           onChange={(e) => setFormData(prev => ({ ...prev, minWordCount: e.target.value }))}
+                           placeholder="500"
+                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                         />
+                       </div>
+                     </div>
 
-                  {errors.submit && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                      {errors.submit}
-                    </div>
-                  )}
+                     {/* Maximum Links Row */}
+                     <div className="flex items-center">
+                       <div className="w-32 flex-shrink-0">
+                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                           Maximum Links
+                         </label>
+                       </div>
+                       <div className="flex-1">
+                         <input
+                           type="number"
+                           value={formData.maxLinks}
+                           onChange={(e) => setFormData(prev => ({ ...prev, maxLinks: e.target.value }))}
+                           placeholder="3"
+                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                         />
+                       </div>
+                     </div>
+                   </div>
 
-                  <div className="flex justify-between">
-                    <Button
-                      onClick={() => setCurrentStep(2)}
-                      variant="outline"
-                      className="px-6 py-3"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </Button>
-                    <Button
-                      onClick={handleSubmit}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Create Website
-                    </Button>
-                  </div>
-                </div>
-              )}
+                   {errors.submit && (
+                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                       {errors.submit}
+                     </div>
+                   )}
+
+                   {/* Action Buttons */}
+                   <div className="mt-8 flex justify-end space-x-4">
+                     <Button
+                       onClick={() => setCurrentStep(2)}
+                       variant="outline"
+                       className="px-6 py-3"
+                     >
+                       <ArrowLeft className="w-4 h-4 mr-2" />
+                       Back
+                     </Button>
+                     <Button
+                       onClick={handleSubmit}
+                       className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     >
+                       <CheckCircle className="w-4 h-4 mr-2" />
+                       Create Website
+                     </Button>
+                   </div>
+                 </div>
+               )}
             </div>
           </div>
         </div>

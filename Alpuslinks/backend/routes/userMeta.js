@@ -76,6 +76,7 @@ router.put('/by-user/:userId', auth, [
   body('country').optional().trim().isLength({ max: 100 }).withMessage('Country cannot exceed 100 characters'),
   body('timezone').optional().trim().isLength({ max: 50 }).withMessage('Timezone cannot exceed 50 characters'),
   body('language').optional().trim().isLength({ max: 50 }).withMessage('Language cannot exceed 50 characters'),
+  body('birthday').optional().trim().isLength({ max: 50 }).withMessage('Birthday cannot exceed 50 characters'),
   body('twitter').optional().trim(),
   body('linkedin').optional().trim(),
   body('github').optional().trim()
@@ -94,7 +95,7 @@ router.put('/by-user/:userId', auth, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { phone, location, city, bio, website, country, timezone, language, twitter, linkedin, github } = req.body;
+    const { phone, location, city, bio, website, country, timezone, language, birthday, twitter, linkedin, github } = req.body;
 
     console.log(`Received user meta data for user ${req.params.userId}:`, req.body);
 
@@ -108,6 +109,7 @@ router.put('/by-user/:userId', auth, [
       country,
       timezone,
       language,
+      birthday,
       twitter,
       linkedin,
       github
@@ -175,6 +177,7 @@ router.put('/', auth, [
   body('country').optional().trim().isLength({ max: 100 }).withMessage('Country cannot exceed 100 characters'),
   body('timezone').optional().trim().isLength({ max: 50 }).withMessage('Timezone cannot exceed 50 characters'),
   body('language').optional().trim().isLength({ max: 50 }).withMessage('Language cannot exceed 50 characters'),
+  body('birthday').optional().trim().isLength({ max: 50 }).withMessage('Birthday cannot exceed 50 characters'),
   body('twitter').optional().trim(),
   body('linkedin').optional().trim(),
   body('github').optional().trim()
@@ -185,7 +188,7 @@ router.put('/', auth, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { phone, location, city, bio, website, country, timezone, language, twitter, linkedin, github } = req.body;
+    const { phone, location, city, bio, website, country, timezone, language, birthday, twitter, linkedin, github } = req.body;
 
     console.log('Received user meta data:', req.body);
 
@@ -199,6 +202,7 @@ router.put('/', auth, [
       country,
       timezone,
       language,
+      birthday,
       twitter,
       linkedin,
       github

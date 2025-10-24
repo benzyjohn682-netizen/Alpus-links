@@ -245,10 +245,10 @@ export function Sidebar() {
               onClick={() => setCollapsed(!collapsed)}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={collapsed ? "Expand" : "Collapse"}
-              className="group p-2 rounded-full bg-white/60 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all"
+              className="group w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all flex items-center justify-center"
             >
               <ChevronLeft className={cn(
-                "w-5 h-5 text-gray-500 transition-transform duration-300",
+                "w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform duration-300",
                 collapsed && "rotate-180"
               )} />
             </button>

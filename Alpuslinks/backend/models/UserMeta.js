@@ -10,7 +10,7 @@ const userMetaSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    enum: ['phone', 'location', 'city', 'bio', 'website', 'country', 'timezone', 'language', 'twitter', 'linkedin', 'github']
+    enum: ['phone', 'location', 'city', 'bio', 'website', 'country', 'timezone', 'language', 'twitter', 'linkedin', 'github', 'birthday']
   },
   meta_value: {
     type: String,

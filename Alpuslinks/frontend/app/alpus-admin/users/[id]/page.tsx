@@ -78,6 +78,7 @@ export default function UserDetailPage() {
     country: '',
     timezone: '',
     language: '',
+    birthday: '',
     status: '',
     emailVerified: false,
     lastLogin: '',
@@ -127,6 +128,7 @@ export default function UserDetailPage() {
           country: userMeta.country || '',
           timezone: userMeta.timezone || '',
           language: userMeta.language || '',
+          birthday: userMeta.birthday || '',
           status: userData.status || 'active',
           emailVerified: userData.emailVerified || false,
           lastLogin: userData.lastLogin || '',
@@ -180,7 +182,8 @@ export default function UserDetailPage() {
         city: editForm.city,
         country: editForm.country,
         timezone: editForm.timezone,
-        language: editForm.language
+        language: editForm.language,
+        birthday: editForm.birthday
       }
       await apiService.updateUserMetaById(user._id, metaData)
       
@@ -576,6 +579,23 @@ export default function UserDetailPage() {
              <option value="Telugu">Telugu</option>
              <option value="Urdu">Urdu</option>
            </select>
+         </div>
+       </div>
+
+       {/* Birthday Row */}
+       <div className="flex items-center">
+         <div className="w-32 flex-shrink-0">
+           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+             Birthday
+           </label>
+         </div>
+         <div className="flex-1">
+           <input
+             type="date"
+             value={editForm.birthday}
+             onChange={(e) => setEditForm({...editForm, birthday: e.target.value})}
+             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+           />
          </div>
        </div>
 

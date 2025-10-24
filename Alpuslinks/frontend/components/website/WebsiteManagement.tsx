@@ -15,11 +15,16 @@ interface Website {
   publisherId: string
   domain: string
   url: string
-  categories: string[]
+  categories: Array<{
+    _id: string
+    name: string
+    slug: string
+  }>
   pricing: {
     guestPost?: number
     linkInsertion?: number
     writingGuestPost?: number
+    extraLinks?: number
   }
   turnaroundTimeDays: number
   country: string

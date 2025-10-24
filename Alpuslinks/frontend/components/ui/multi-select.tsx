@@ -13,6 +13,7 @@ interface MultiSelectProps {
   onChange: (value: string[]) => void
   placeholder?: string
   className?: string
+  showAllAsTags?: boolean // New prop to control display mode
 }
 
 export function MultiSelect({ 
@@ -20,7 +21,8 @@ export function MultiSelect({
   value, 
   onChange, 
   placeholder = "Select options...",
-  className = ""
+  className = "",
+  showAllAsTags = false
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -31,6 +33,23 @@ export function MultiSelect({
   )
 
   const selectedOptions = options.filter(option => value.includes(option.value))
+  
+  // Debug logging
+  console.log('MultiSelect - selectedOptions calculated:', {
+    options: options.length,
+    value: value,
+    selected: selectedOptions.length,
+    selectedNames: selectedOptions.map(s => s.label)
+  })
+  
+  // Debug logging
+  console.log('MultiSelect Debug:', {
+    optionsCount: options.length,
+    valueCount: value.length,
+    selectedOptionsCount: selectedOptions.length,
+    value: value,
+    selectedOptions: selectedOptions.map(o => ({ value: o.value, label: o.label }))
+  })
 
   const handleToggle = (optionValue: string) => {
     if (value.includes(optionValue)) {
@@ -41,7 +60,11 @@ export function MultiSelect({
   }
 
   const handleRemove = (optionValue: string) => {
-    onChange(value.filter(v => v !== optionValue))
+    console.log('handleRemove called with:', optionValue)
+    console.log('Current value before removal:', value)
+    const newValue = value.filter(v => v !== optionValue)
+    console.log('New value after removal:', newValue)
+    onChange(newValue)
   }
 
   const handleSelectAll = () => {
@@ -68,31 +91,64 @@ export function MultiSelect({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <div
         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 cursor-pointer"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          // Only open dropdown if clicking on the container itself, not on tags or buttons
+          if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.category-tag')) {
+            return
+          }
+          setIsOpen(!isOpen)
+        }}
       >
         <div className="flex items-center justify-between">
-          <div className="flex flex-wrap gap-1 min-h-[20px]">
-            {selectedOptions.length > 0 ? (
-              selectedOptions.map(option => (
-                <span
-                  key={option.value}
-                  className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-md"
-                >
-                  {option.label}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemove(option.value)
-                    }}
-                    className="ml-1 hover:text-blue-600"
+          <div className="flex flex-wrap gap-1 min-h-[20px] w-full">
+            {showAllAsTags ? (
+              // Show only selected options as tags (for edit page)
+              selectedOptions.length > 0 ? (
+                selectedOptions.map(option => (
+                  <span
+                    key={option.value}
+                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-500 text-white rounded-md mr-1 mb-1"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))
+                    {option.label}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemove(option.value)
+                      }}
+                      className="ml-1 hover:text-gray-200"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
+              )
             ) : (
-              <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
+              // Show only selected options as tags (for create page)
+              selectedOptions.length > 0 ? (
+                selectedOptions.map(option => (
+                  <span
+                    key={option.value}
+                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-200 text-blue-900 rounded-md"
+                  >
+                    {option.label}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemove(option.value)
+                      }}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
+              )
             )}
           </div>
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />

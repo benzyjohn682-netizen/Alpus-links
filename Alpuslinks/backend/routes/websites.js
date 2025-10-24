@@ -33,6 +33,7 @@ router.get('/publisher/:publisherId', auth, async (req, res) => {
 
     const websites = await Website.find(query)
       .populate('publisherId', 'firstName lastName email')
+      .populate('categories', 'name slug')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -298,7 +299,8 @@ router.patch('/bulk/status', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   try {
     const website = await Website.findById(req.params.id)
-      .populate('publisherId', 'firstName lastName email');
+      .populate('publisherId', 'firstName lastName email')
+      .populate('categories', 'name slug');
 
     if (!website) {
       return res.status(404).json({ message: 'Website not found' });

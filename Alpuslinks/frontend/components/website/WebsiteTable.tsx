@@ -7,11 +7,16 @@ interface Website {
   publisherId: string
   domain: string
   url: string
-  categories: string[]
+  categories: Array<{
+    _id: string
+    name: string
+    slug: string
+  }>
   pricing: {
     guestPost?: number
     linkInsertion?: number
     writingGuestPost?: number
+    extraLinks?: number
   }
   turnaroundTimeDays: number
   country: string
@@ -276,10 +281,10 @@ export function WebsiteTable({
                         <span
                           key={index}
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            categoryColors[cat as keyof typeof categoryColors] || categoryColors.other
+                            categoryColors[cat.name as keyof typeof categoryColors] || categoryColors.other
                           }`}
                         >
-                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                          {cat.name}
                         </span>
                       ))
                     ) : (
@@ -327,31 +332,41 @@ export function WebsiteTable({
                     {website.pricing?.linkInsertion && (
                       <div>Link Insertion: {formatCurrency(website.pricing.linkInsertion)}</div>
                     )}
+                    {website.pricing?.extraLinks && (
+                      <div>Extra Links: {formatCurrency(website.pricing.extraLinks)}</div>
+                    )}
                     {website.pricing?.writingGuestPost && (
                       <div>Writing + GP: {formatCurrency(website.pricing.writingGuestPost)}</div>
                     )}
-                    {!website.pricing?.guestPost && !website.pricing?.linkInsertion && !website.pricing?.writingGuestPost && (
+                    {!website.pricing?.guestPost && !website.pricing?.linkInsertion && !website.pricing?.extraLinks && !website.pricing?.writingGuestPost && (
                       <span className="text-gray-400">Not set</span>
                     )}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   <div className="flex flex-col space-y-1">
-                    {website.meta?.minWordCount && (
+                    {website.turnaroundTimeDays && (
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-gray-600 dark:text-gray-400">TAT:</span>
+                        <span className="font-medium">{website.turnaroundTimeDays} days</span>
+                      </div>
+                    )}
+                    {website.meta?.minWordCount && (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         <span className="text-gray-600 dark:text-gray-400">Min Words:</span>
                         <span className="font-medium">{website.meta.minWordCount.toLocaleString()}</span>
                       </div>
                     )}
                     {website.meta?.maxLinks && (
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                         <span className="text-gray-600 dark:text-gray-400">Max Links:</span>
                         <span className="font-medium">{website.meta.maxLinks}</span>
                       </div>
                     )}
-                    {!website.meta?.minWordCount && !website.meta?.maxLinks && (
+                    {!website.turnaroundTimeDays && !website.meta?.minWordCount && !website.meta?.maxLinks && (
                       <span className="text-gray-400">Not set</span>
                     )}
                   </div>

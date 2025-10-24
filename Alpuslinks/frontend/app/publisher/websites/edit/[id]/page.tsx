@@ -1,13 +1,15 @@
 "use client"
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import { TwoStepWebsiteForm } from '@/components/website/TwoStepWebsiteForm'
 import { useAuth } from '@/contexts/auth-context'
 import { apiService } from '@/lib/api'
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle, AlertCircle, ArrowRight, Shield, Upload, Globe, FileText, User } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { MultiSelect } from '@/components/ui/multi-select'
+import CustomSelect from '@/components/ui/custom-select'
 import toast from 'react-hot-toast'
 
 interface Website {
@@ -15,11 +17,16 @@ interface Website {
   publisherId: string
   domain: string
   url: string
-  categories: string[]
+  categories: Array<{
+    _id: string
+    name: string
+    slug: string
+  }>
   pricing: {
     guestPost?: number
     linkInsertion?: number
     writingGuestPost?: number
+    extraLinks?: number
   }
   turnaroundTimeDays: number
   country: string
@@ -62,15 +69,120 @@ interface Website {
   }
 }
 
+const countries = [
+  { value: 'United States', label: '🇺🇸 United States' },
+  { value: 'United Kingdom', label: '🇬🇧 United Kingdom' },
+  { value: 'Canada', label: '🇨🇦 Canada' },
+  { value: 'Australia', label: '🇦🇺 Australia' },
+  { value: 'Germany', label: '🇩🇪 Germany' },
+  { value: 'France', label: '🇫🇷 France' },
+  { value: 'Spain', label: '🇪🇸 Spain' },
+  { value: 'Italy', label: '🇮🇹 Italy' },
+  { value: 'Netherlands', label: '🇳🇱 Netherlands' },
+  { value: 'Sweden', label: '🇸🇪 Sweden' },
+  { value: 'Norway', label: '🇳🇴 Norway' },
+  { value: 'Denmark', label: '🇩🇰 Denmark' },
+  { value: 'Finland', label: '🇫🇮 Finland' },
+  { value: 'Japan', label: '🇯🇵 Japan' },
+  { value: 'South Korea', label: '🇰🇷 South Korea' },
+  { value: 'China', label: '🇨🇳 China' },
+  { value: 'India', label: '🇮🇳 India' },
+  { value: 'Brazil', label: '🇧🇷 Brazil' },
+  { value: 'Mexico', label: '🇲🇽 Mexico' },
+  { value: 'Argentina', label: '🇦🇷 Argentina' }
+]
+
+const languages = [
+  { value: 'en', label: '🇺🇸 English' },
+  { value: 'es', label: '🇪🇸 Spanish' },
+  { value: 'fr', label: '🇫🇷 French' },
+  { value: 'de', label: '🇩🇪 German' },
+  { value: 'it', label: '🇮🇹 Italian' },
+  { value: 'pt', label: '🇵🇹 Portuguese' },
+  { value: 'ru', label: '🇷🇺 Russian' },
+  { value: 'ja', label: '🇯🇵 Japanese' },
+  { value: 'ko', label: '🇰🇷 Korean' },
+  { value: 'zh', label: '🇨🇳 Chinese' }
+]
+
 export default function EditWebsitePage() {
   const { user } = useAuth()
   const router = useRouter()
   const params = useParams()
   const websiteId = params.id as string
   
+  // Form state
+  const [currentStep, setCurrentStep] = useState(1)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [verificationResult, setVerificationResult] = useState<any>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isCheckingUrl, setIsCheckingUrl] = useState(false)
+  
+  // Categories state
+  const [categories, setCategories] = useState<Array<{value: string, label: string}>>([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+  
+  // Ownership verification states
+  const [ownershipMethod, setOwnershipMethod] = useState<'meta' | 'file' | 'dns' | 'skip'>('meta')
+  const [isVerifyingOwnership, setIsVerifyingOwnership] = useState(false)
+  const [ownershipVerificationResult, setOwnershipVerificationResult] = useState<any>(null)
+  const [userRole, setUserRole] = useState<'owner' | 'contributor'>('owner')
+  const [metaTagContent, setMetaTagContent] = useState('')
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [dnsRecord, setDnsRecord] = useState('')
+
+  // Step 1 data
+  const [url, setUrl] = useState('')
+  
+  // Step 2 data
+  const [formData, setFormData] = useState({
+    categories: [] as string[],
+    guestPostPrice: '',
+    linkInsertionPrice: '',
+    writingGuestPostPrice: '',
+    extraLinksPrice: '',
+    tatDays: '',
+    country: '',
+    language: 'en',
+    minWordCount: '',
+    maxLinks: ''
+  })
+  
   const [website, setWebsite] = useState<Website | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoadingCategories(true)
+        console.log('Fetching categories...')
+        const response = await apiService.getCategories()
+        console.log('Categories API response:', response)
+        if (response.data && (response.data as any).success) {
+          const categoryData = (response.data as any).data
+          console.log('Raw category data:', categoryData)
+          const formattedCategories = categoryData.map((cat: any) => ({
+            value: cat._id,
+            label: cat.name
+          }))
+          console.log('Formatted categories:', formattedCategories)
+          setCategories(formattedCategories)
+        } else {
+          console.log('Categories API response not successful:', response.data)
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        toast.error('Failed to load categories')
+      } finally {
+        setIsLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   useEffect(() => {
     const loadWebsite = async () => {
@@ -80,9 +192,45 @@ export default function EditWebsitePage() {
         setLoading(true)
         setError(null)
         
+        console.log('Loading website with ID:', websiteId)
         const response = await apiService.getWebsite(websiteId)
+        console.log('Website API response:', response)
+        
         if (response.data) {
-          setWebsite(response.data as Website)
+          const websiteData = response.data as Website
+          console.log('Website data received:', websiteData)
+          setWebsite(websiteData)
+          
+          // Populate form data
+          setUrl(websiteData.url)
+          const categoryIds = websiteData.categories.map(cat => cat._id)
+          console.log('Website categories from API:', websiteData.categories)
+          console.log('Category IDs extracted:', categoryIds)
+          console.log('Available categories in state:', categories)
+          console.log('Category IDs match check:', categoryIds.map(id => 
+            categories.find(cat => cat.value === id)
+          ))
+          
+          setFormData({
+            categories: categoryIds,
+            guestPostPrice: websiteData.pricing?.guestPost?.toString() || '',
+            linkInsertionPrice: websiteData.pricing?.linkInsertion?.toString() || '',
+            writingGuestPostPrice: websiteData.pricing?.writingGuestPost?.toString() || '',
+            extraLinksPrice: websiteData.pricing?.extraLinks?.toString() || '',
+            tatDays: websiteData.turnaroundTimeDays?.toString() || '',
+            country: websiteData.country || '',
+            language: websiteData.language || 'en',
+            minWordCount: websiteData.meta?.minWordCount?.toString() || '',
+            maxLinks: websiteData.meta?.maxLinks?.toString() || ''
+          })
+          
+          console.log('Form data set with categories:', categoryIds)
+          
+          // Set ownership verification data
+          setOwnershipMethod(websiteData.ownershipVerification?.verificationMethod as any || 'meta')
+          setUserRole(websiteData.ownershipVerification?.userRole as any || 'owner')
+          setMetaTagContent(websiteData.ownershipVerification?.verificationDetails?.metaTagContent || '')
+          setDnsRecord(websiteData.ownershipVerification?.verificationDetails?.dnsRecord || '')
         } else {
           setError('Website not found')
         }
@@ -94,15 +242,60 @@ export default function EditWebsitePage() {
       }
     }
 
+    // Only load website after categories are loaded
+    if (categories.length > 0) {
+      console.log('Categories loaded, now loading website...')
     loadWebsite()
-  }, [websiteId, user?.id])
+    } else {
+      console.log('Categories not loaded yet, waiting...')
+    }
+  }, [websiteId, user?.id, categories.length])
 
-  const handleUpdateWebsite = async (websiteData: any) => {
+  const handleSubmit = async () => {
+    setErrors({})
+
+    // Validation
+    if (!formData.categories.length) {
+      setErrors({ categories: 'Please select at least one category' })
+      return
+    }
+
+    if (!formData.country) {
+      setErrors({ country: 'Please select a country' })
+      return
+    }
+
     try {
+      setSaving(true)
+      const websiteData = {
+        url,
+        categories: formData.categories,
+        pricing: {
+          ...(formData.guestPostPrice && { guestPost: parseFloat(formData.guestPostPrice) }),
+          ...(formData.linkInsertionPrice && { linkInsertion: parseFloat(formData.linkInsertionPrice) }),
+          ...(formData.extraLinksPrice && { extraLinks: parseFloat(formData.extraLinksPrice) }),
+          ...(formData.writingGuestPostPrice && { writingGuestPost: parseFloat(formData.writingGuestPostPrice) })
+        },
+        turnaroundTimeDays: parseInt(formData.tatDays) || 7,
+        country: formData.country,
+        language: formData.language,
+        meta: {
+          ...(formData.minWordCount && { minWordCount: parseInt(formData.minWordCount) }),
+          ...(formData.maxLinks && { maxLinks: parseInt(formData.maxLinks) })
+        },
+        ownershipVerification: {
+          method: ownershipMethod,
+          verified: ownershipVerificationResult?.isVerified || false,
+          role: userRole,
+          ...(ownershipMethod === 'meta' && { metaTagContent }),
+          ...(ownershipMethod === 'file' && { fileName: uploadedFile?.name }),
+          ...(ownershipMethod === 'dns' && { dnsRecord })
+        }
+      }
+
       const response = await apiService.updateWebsite(websiteId, websiteData)
       if (response.data) {
         toast.success('Website updated successfully!')
-        setError(null)
         
         // Dispatch event to update sidebar
         window.dispatchEvent(new CustomEvent('websiteUpdated'))
@@ -113,7 +306,9 @@ export default function EditWebsitePage() {
         }, 2000)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update website')
+      setErrors({ submit: err instanceof Error ? err.message : 'Failed to update website' })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -200,20 +395,250 @@ export default function EditWebsitePage() {
             </p>
           </div>
 
-          {/* Error Messages */}
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
 
-          {/* Website Form */}
+          {/* Form Content */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-            <TwoStepWebsiteForm
-              website={website}
-              onSubmit={handleUpdateWebsite}
-              onClose={() => router.push('/publisher/websites')}
-            />
+            <div className="p-8">
+              {/* Step 3: Set Details - Skip to details for edit */}
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Update Website Details
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Update your website's categories, pricing, and requirements.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Categories Row */}
+                  <div className="flex items-start">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Categories *
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      {isLoadingCategories || !website ? (
+                        <div className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          {isLoadingCategories ? 'Loading categories...' : 'Loading website...'}
+                        </div>
+                      ) : (
+                        <MultiSelect
+                          options={categories}
+                          value={formData.categories}
+                          onChange={(value) => setFormData(prev => ({ ...prev, categories: value }))}
+                          placeholder="Select categories"
+                          showAllAsTags={true}
+                        />
+                      )}
+                      {errors.categories && (
+                        <p className="mt-2 text-sm text-red-600">{errors.categories}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Country Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Country *
+                      </label>
+            </div>
+                    <div className="flex-1">
+                      <CustomSelect
+                        options={countries}
+                        value={formData.country}
+                        onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+                        placeholder="Select country"
+                      />
+                      {errors.country && (
+                        <p className="mt-2 text-sm text-red-600">{errors.country}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Language Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Language
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <CustomSelect
+                        options={languages}
+                        value={formData.language}
+                        onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+                        placeholder="Select language"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Turnaround Time Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Turnaround Time (Days)
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.tatDays}
+                        onChange={(e) => setFormData(prev => ({ ...prev, tatDays: e.target.value }))}
+                        placeholder="7"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Guest Post Price Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Guest Post Price ($)
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.guestPostPrice}
+                        onChange={(e) => setFormData(prev => ({ ...prev, guestPostPrice: e.target.value }))}
+                        placeholder="0"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Link Insertion Price Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Link Insertion Price ($)
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.linkInsertionPrice}
+                        onChange={(e) => setFormData(prev => ({ ...prev, linkInsertionPrice: e.target.value }))}
+                        placeholder="0"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Extra Links Price Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Extra Links Price ($)
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.extraLinksPrice}
+                        onChange={(e) => setFormData(prev => ({ ...prev, extraLinksPrice: e.target.value }))}
+                        placeholder="0"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Writing + Guest Post Price Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Writing + Guest Post Price ($)
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.writingGuestPostPrice}
+                        onChange={(e) => setFormData(prev => ({ ...prev, writingGuestPostPrice: e.target.value }))}
+                        placeholder="0"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Minimum Word Count Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Minimum Word Count
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.minWordCount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, minWordCount: e.target.value }))}
+                        placeholder="500"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Maximum Links Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Maximum Links
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={formData.maxLinks}
+                        onChange={(e) => setFormData(prev => ({ ...prev, maxLinks: e.target.value }))}
+                        placeholder="3"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {errors.submit && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {errors.submit}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="mt-8 flex justify-end space-x-4">
+                  <Button
+                    onClick={() => router.push('/publisher/websites')}
+                    variant="outline"
+                    className="px-6 py-3"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={saving}
+                    className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Update Website
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

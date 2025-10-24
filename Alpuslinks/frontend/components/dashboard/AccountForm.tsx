@@ -17,6 +17,7 @@ export default function AccountForm() {
   const [country, setCountry] = useState('')
   const [timezone, setTimezone] = useState('')
   const [language, setLanguage] = useState('')
+  const [birthday, setBirthday] = useState('')
   const [avatar, setAvatar] = useState<string | null>(null)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -323,6 +324,7 @@ export default function AccountForm() {
         setCountry(userMeta.country || '')
         setTimezone(userMeta.timezone || '')
         setLanguage(userMeta.language || '')
+        setBirthday(userMeta.birthday || '')
       }
     } catch (err) {
       console.error('Failed to load user meta:', err)
@@ -396,7 +398,8 @@ export default function AccountForm() {
         city: city.trim(),
         country: country.trim(),
         timezone: timezone.trim(),
-        language: language.trim()
+        language: language.trim(),
+        birthday: birthday.trim()
       }
       console.log('Sending meta data:', metaData)
       const metaResponse = await apiService.updateUserMeta(metaData)
@@ -440,10 +443,10 @@ export default function AccountForm() {
                   onClick={handlePickImage}
                   className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 border-4 border-green-500 flex items-center justify-center hover:border-green-600 transition-colors cursor-pointer"
                 >
-                  {avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
+          {avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+          ) : (
                     <div className="w-full h-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                       <Camera className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                     </div>
@@ -457,11 +460,11 @@ export default function AccountForm() {
                   >
                     <X className="w-3 h-3" />
                   </button>
-                )}
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-            </div>
-          </div>
+          )}
+        </div>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        </div>
+      </div>
         </div>
 
         {/* Form Fields */}
@@ -592,7 +595,7 @@ export default function AccountForm() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 City
               </label>
-            </div>
+        </div>
             <div className="flex-1">
               <input 
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" 
@@ -600,8 +603,8 @@ export default function AccountForm() {
                 onChange={e => setCity(e.target.value)}
                 placeholder="City"
               />
-            </div>
-          </div>
+        </div>
+        </div>
 
           {/* Timezone Row */}
           <div className="flex items-center">
@@ -609,7 +612,7 @@ export default function AccountForm() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Timezone
               </label>
-            </div>
+        </div>
             <div className="flex-1">
               <select 
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" 
@@ -643,8 +646,8 @@ export default function AccountForm() {
                 <option value="UTC+10:00">UTC+10:00 (Australia)</option>
                 <option value="UTC+11:00">UTC+11:00 (Solomon Islands)</option>
                 <option value="UTC+12:00">UTC+12:00 (New Zealand)</option>
-              </select>
-            </div>
+          </select>
+        </div>
           </div>
 
                  {/* Language Row */}
@@ -661,29 +664,29 @@ export default function AccountForm() {
                        onChange={e => setLanguage(e.target.value)}
                      >
                        <option value="">Select language...</option>
-                       <option value="English">English</option>
-                       <option value="Spanish">Spanish</option>
-                       <option value="French">French</option>
-                       <option value="German">German</option>
-                       <option value="Italian">Italian</option>
-                       <option value="Portuguese">Portuguese</option>
-                       <option value="Russian">Russian</option>
-                       <option value="Japanese">Japanese</option>
-                       <option value="Korean">Korean</option>
+            <option value="English">English</option>
+            <option value="Spanish">Spanish</option>
+            <option value="French">French</option>
+            <option value="German">German</option>
+            <option value="Italian">Italian</option>
+            <option value="Portuguese">Portuguese</option>
+            <option value="Russian">Russian</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option>
                        <option value="Chinese">Chinese</option>
-                       <option value="Arabic">Arabic</option>
-                       <option value="Hindi">Hindi</option>
-                       <option value="Dutch">Dutch</option>
-                       <option value="Swedish">Swedish</option>
-                       <option value="Norwegian">Norwegian</option>
-                       <option value="Danish">Danish</option>
-                       <option value="Finnish">Finnish</option>
-                       <option value="Polish">Polish</option>
-                       <option value="Turkish">Turkish</option>
-                       <option value="Thai">Thai</option>
-                       <option value="Vietnamese">Vietnamese</option>
-                       <option value="Indonesian">Indonesian</option>
-                       <option value="Malay">Malay</option>
+            <option value="Arabic">Arabic</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Dutch">Dutch</option>
+            <option value="Swedish">Swedish</option>
+            <option value="Norwegian">Norwegian</option>
+            <option value="Danish">Danish</option>
+            <option value="Finnish">Finnish</option>
+            <option value="Polish">Polish</option>
+            <option value="Turkish">Turkish</option>
+            <option value="Thai">Thai</option>
+            <option value="Vietnamese">Vietnamese</option>
+            <option value="Indonesian">Indonesian</option>
+            <option value="Malay">Malay</option>
                        <option value="Filipino">Filipino</option>
                        <option value="Hebrew">Hebrew</option>
                        <option value="Ukrainian">Ukrainian</option>
@@ -719,7 +722,24 @@ export default function AccountForm() {
                        <option value="Tamil">Tamil</option>
                        <option value="Telugu">Telugu</option>
                        <option value="Urdu">Urdu</option>
-                     </select>
+          </select>
+        </div>
+      </div>
+
+                 {/* Birthday Row */}
+                 <div className="flex items-center">
+                   <div className="w-32 flex-shrink-0">
+                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                       Birthday
+                     </label>
+                   </div>
+                   <div className="flex-1">
+                     <input
+                       type="date"
+                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                       value={birthday}
+                       onChange={e => setBirthday(e.target.value)}
+                     />
                    </div>
                  </div>
         </div>
@@ -765,7 +785,7 @@ export default function AccountForm() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Confirm Password
                 </label>
-              </div>
+          </div>
               <div className="flex-1">
                 <input 
                   type="password" 
@@ -774,10 +794,10 @@ export default function AccountForm() {
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
                 />
-              </div>
-            </div>
+          </div>
           </div>
         </div>
+      </div>
 
         {/* Save Button */}
         <div className="mt-8 flex justify-end">
@@ -786,10 +806,10 @@ export default function AccountForm() {
             type="submit" 
             className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </form>
     </div>
   )
 }
