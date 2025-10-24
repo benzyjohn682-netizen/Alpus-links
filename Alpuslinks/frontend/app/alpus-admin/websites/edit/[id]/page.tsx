@@ -10,6 +10,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MultiSelect } from '@/components/ui/multi-select'
 import CustomSelect from '@/components/ui/custom-select'
+import CountrySelect from '@/components/ui/country-select'
+import LanguageSelect from '@/components/ui/language-select'
 import toast from 'react-hot-toast'
 
 interface Website {
@@ -69,41 +71,6 @@ interface Website {
   }
 }
 
-const countries = [
-  { value: 'United States', label: '🇺🇸 United States' },
-  { value: 'United Kingdom', label: '🇬🇧 United Kingdom' },
-  { value: 'Canada', label: '🇨🇦 Canada' },
-  { value: 'Australia', label: '🇦🇺 Australia' },
-  { value: 'Germany', label: '🇩🇪 Germany' },
-  { value: 'France', label: '🇫🇷 France' },
-  { value: 'Spain', label: '🇪🇸 Spain' },
-  { value: 'Italy', label: '🇮🇹 Italy' },
-  { value: 'Netherlands', label: '🇳🇱 Netherlands' },
-  { value: 'Sweden', label: '🇸🇪 Sweden' },
-  { value: 'Norway', label: '🇳🇴 Norway' },
-  { value: 'Denmark', label: '🇩🇰 Denmark' },
-  { value: 'Finland', label: '🇫🇮 Finland' },
-  { value: 'Japan', label: '🇯🇵 Japan' },
-  { value: 'South Korea', label: '🇰🇷 South Korea' },
-  { value: 'China', label: '🇨🇳 China' },
-  { value: 'India', label: '🇮🇳 India' },
-  { value: 'Brazil', label: '🇧🇷 Brazil' },
-  { value: 'Mexico', label: '🇲🇽 Mexico' },
-  { value: 'Argentina', label: '🇦🇷 Argentina' }
-]
-
-const languages = [
-  { value: 'en', label: '🇺🇸 English' },
-  { value: 'es', label: '🇪🇸 Spanish' },
-  { value: 'fr', label: '🇫🇷 French' },
-  { value: 'de', label: '🇩🇪 German' },
-  { value: 'it', label: '🇮🇹 Italian' },
-  { value: 'pt', label: '🇵🇹 Portuguese' },
-  { value: 'ru', label: '🇷🇺 Russian' },
-  { value: 'ja', label: '🇯🇵 Japanese' },
-  { value: 'ko', label: '🇰🇷 Korean' },
-  { value: 'zh', label: '🇨🇳 Chinese' }
-]
 
 const statusOptions = [
   { value: 'pending', label: '⏳ Pending' },
@@ -472,8 +439,7 @@ export default function EditWebsitePage() {
                       </label>
                     </div>
                     <div className="flex-1">
-                      <CustomSelect
-                        options={countries}
+                      <CountrySelect
                         value={formData.country}
                         onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
                         placeholder="Select country"
@@ -492,8 +458,7 @@ export default function EditWebsitePage() {
                       </label>
                     </div>
                     <div className="flex-1">
-                      <CustomSelect
-                        options={languages}
+                      <LanguageSelect
                         value={formData.language}
                         onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
                         placeholder="Select language"

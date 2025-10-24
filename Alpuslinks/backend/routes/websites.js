@@ -187,6 +187,7 @@ router.get('/advertiser/websites', auth, async (req, res) => {
 
     const websites = await Website.find(query)
       .populate('publisherId', 'firstName lastName email')
+      .populate('categories', 'name slug')
       .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit);
