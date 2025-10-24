@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 import { DefaultAvatar } from '@/components/ui/DefaultAvatar'
 import { getRoleNameLowercase } from '@/lib/roleUtils'
-import { apiService } from '@/lib/api'
 
 type SidebarItem = {
   name: string
@@ -60,53 +59,9 @@ function getHomePathForRole(role?: any) {
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [expandedSections, setExpandedSections] = useState<string[]>([])
-  const [hasWebsites, setHasWebsites] = useState(false)
-  const [userWebsites, setUserWebsites] = useState<any[]>([])
   const { user } = useAuth()
   const pathname = usePathname()
   const role = getRoleNameLowercase(user?.role)
-
-  // Check if user has websites
-  const checkWebsites = async () => {
-    if (user?.id && role === 'publisher') {
-      try {
-        const response = await apiService.getWebsites(user.id, 1, 10) // Get up to 10 websites
-        if (response.data && (response.data as any).websites?.length > 0) {
-          setHasWebsites(true)
-          setUserWebsites((response.data as any).websites)
-        } else {
-          setHasWebsites(false)
-          setUserWebsites([])
-        }
-      } catch (error) {
-        console.error('Failed to check websites:', error)
-        setHasWebsites(false)
-        setUserWebsites([])
-      }
-    }
-  }
-
-  useEffect(() => {
-    checkWebsites()
-  }, [user?.id, role])
-
-  // Listen for website creation events
-  useEffect(() => {
-    const handleWebsiteCreated = () => {
-      checkWebsites()
-    }
-
-    // Listen for custom events
-    window.addEventListener('websiteCreated', handleWebsiteCreated)
-    window.addEventListener('websiteUpdated', handleWebsiteCreated)
-    window.addEventListener('websiteDeleted', handleWebsiteCreated)
-
-    return () => {
-      window.removeEventListener('websiteCreated', handleWebsiteCreated)
-      window.removeEventListener('websiteUpdated', handleWebsiteCreated)
-      window.removeEventListener('websiteDeleted', handleWebsiteCreated)
-    }
-  }, [user?.id])
 
   const buildNavigation = (): Array<SidebarSection | { name: string; icon: any; href: string; children: [] }> => {
     const sections: Array<SidebarSection | { name: string; icon: any; href: string; children: [] }> = []
@@ -138,26 +93,10 @@ export function Sidebar() {
 
     // My Websites: available to publishers
     if (role === 'publisher') {
-      const myWebsitesChildren: SidebarItem[] = []
-      
-      // Add individual website domain pages if user has websites
-      if (hasWebsites && userWebsites.length > 0) {
-        userWebsites.forEach((website) => {
-          const domain = website.domain || website.url?.replace(/^https?:\/\//, '').replace(/^www\./, '') || 'Unknown Domain'
-          myWebsitesChildren.push({
-            name: domain,
-            icon: Plus,
-            href: `/publisher/websites/${website._id}`
-          })
-        })
-      }
-      
       userChildren.push({
         name: 'My Websites',
         icon: BarChart3,
-        href: '/publisher/websites',
-        isAccordion: hasWebsites && myWebsitesChildren.length > 0,
-        children: myWebsitesChildren
+        href: '/publisher/websites'
       })
     }
 
@@ -307,6 +246,71 @@ export function Sidebar() {
                                 <ChevronRight className="w-4 h-4" />
                             )}
                           </button>
+                          
+                          {isExpanded && !collapsed && (
+                            <div className="ml-4 space-y-1 mt-1">
+                              {child.children?.map((subChild: any, subIndex: number) => {
+                                const SubIcon = subChild.icon
+                                const isSubActive = isActive(subChild.href)
+                                
+                                return (
+                                  <Link
+                                    key={subIndex}
+                                    href={subChild.href}
+                                    className={cn(
+                                      "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                                      "hover:bg-gray-100 dark:hover:bg-gray-700",
+                                      isSubActive && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                                    )}
+                                  >
+                                    {SubIcon && <SubIcon className="w-4 h-4 flex-shrink-0" />}
+                                    <span className="text-sm font-medium">
+                                      {subChild.name}
+                                    </span>
+                                  </Link>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+                    
+                    // Handle navigation items with children (like My Websites)
+                    if (!child.isAccordion && child.children && child.children.length > 0) {
+                      const isExpanded = expandedSections.includes(child.name)
+                      return (
+                        <div key={childIndex}>
+                          <div className="flex items-center">
+                            <Link
+                              href={child.href}
+                              className={cn(
+                                "flex items-center flex-1 px-3 py-2 rounded-lg transition-colors",
+                                "hover:bg-gray-100 dark:hover:bg-gray-700",
+                                isChildActive && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
+                                hasActiveChildItem && !isChildActive && "text-gray-700 dark:text-gray-300",
+                                collapsed ? "justify-center" : "space-x-3"
+                              )}
+                            >
+                              {Icon && <Icon className="w-5 h-5 flex-shrink-0" />}
+                              {!collapsed && (
+                                <span className="text-sm font-medium">
+                                  {child.name}
+                                </span>
+                              )}
+                            </Link>
+                            {!collapsed && (
+                              <button
+                                onClick={() => toggleSection(child.name)}
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                              >
+                                {isExpanded ? 
+                                  <ChevronDown className="w-4 h-4" /> : 
+                                  <ChevronRight className="w-4 h-4" />
+                                }
+                              </button>
+                            )}
+                          </div>
                           
                           {isExpanded && !collapsed && (
                             <div className="ml-4 space-y-1 mt-1">
