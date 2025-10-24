@@ -618,7 +618,25 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    // Get user meta data
+    const UserMeta = require('../models/UserMeta');
+    const userMetaRecords = await UserMeta.find({ userId: req.params.id });
+    
+    // Convert array of records to object format
+    const userMeta = {};
+    userMetaRecords.forEach(record => {
+      userMeta[record.meta_property] = record.meta_value;
+    });
+
+    // Add meta data to user object
+    const userWithMeta = {
+      ...user.toObject(),
+      meta: userMeta
+    };
+
+    console.log(`GET user ${req.params.id} with meta data:`, userMeta);
+
+    res.json(userWithMeta);
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ message: 'Server error' });

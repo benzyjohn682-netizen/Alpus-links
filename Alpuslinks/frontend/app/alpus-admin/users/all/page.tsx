@@ -14,6 +14,7 @@ interface User {
   firstName: string
   lastName: string
   email: string
+  avatar?: string
   role?: {
     _id: string
     name: string
@@ -758,13 +759,37 @@ export default function AllUsersPage() {
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleUserNameClick(user._id)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 hover:underline cursor-pointer transition-all duration-200 bg-transparent border-none p-0 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded px-1 py-0.5 -mx-1 -my-0.5 flex items-center gap-1"
-                          >
-                            {user.firstName || ''} {user.lastName || ''}
-                            <ExternalLink className="w-3 h-3 opacity-60" />
-                          </button>
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              {user.avatar ? (
+                                <img
+                                  className="h-10 w-10 rounded-full object-cover"
+                                  src={user.avatar}
+                                  alt={`${user.firstName} ${user.lastName}`}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const fallback = target.nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <div 
+                                className={`h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-sm font-medium text-gray-700 dark:text-gray-300 ${user.avatar ? 'hidden' : 'flex'}`}
+                              >
+                                {user.firstName?.charAt(0)?.toUpperCase() || ''}{user.lastName?.charAt(0)?.toUpperCase() || ''}
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <button
+                                onClick={() => handleUserNameClick(user._id)}
+                                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100 hover:underline cursor-pointer transition-all duration-200 bg-transparent border-none p-0 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded px-1 py-0.5 -mx-1 -my-0.5 flex items-center gap-1"
+                              >
+                                {user.firstName || ''} {user.lastName || ''}
+                                <ExternalLink className="w-3 h-3 opacity-60" />
+                              </button>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">

@@ -28,6 +28,131 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/user-meta/by-user/:userId
+// @desc    Get user's meta data by user ID (admin only)
+// @access  Private
+router.get('/by-user/:userId', auth, async (req, res) => {
+  try {
+    // Check if user is admin or super admin
+    const User = require('../models/User');
+    const currentUser = await User.findById(req.userId).populate('role', 'name');
+    
+    if (!currentUser || (currentUser.role.name !== 'admin' && currentUser.role.name !== 'super admin')) {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const userMetaRecords = await UserMeta.find({ userId: req.params.userId });
+    
+    // Convert array of records to object format for easier frontend consumption
+    const userMeta = {};
+    userMetaRecords.forEach(record => {
+      userMeta[record.meta_property] = record.meta_value;
+    });
+    
+    console.log(`GET userMeta for user ${req.params.userId} - Raw records:`, userMetaRecords);
+    console.log(`GET userMeta for user ${req.params.userId} - Converted object:`, userMeta);
+    
+    res.json({ userMeta });
+  } catch (error) {
+    console.error('Get user meta by ID error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/user-meta/by-user/:userId
+// @desc    Update user's meta data by user ID (admin only)
+// @access  Private
+router.put('/by-user/:userId', auth, [
+  body('phone').optional().trim().isLength({ max: 20 }).withMessage('Phone cannot exceed 20 characters'),
+  body('location').optional().trim().isLength({ max: 100 }).withMessage('Location cannot exceed 100 characters'),
+  body('city').optional().trim().isLength({ max: 100 }).withMessage('City cannot exceed 100 characters'),
+  body('bio').optional().trim().isLength({ max: 500 }).withMessage('Bio cannot exceed 500 characters'),
+  body('website').optional().trim().custom((value) => {
+    if (value && value.trim() && !/^https?:\/\/.+/.test(value)) {
+      throw new Error('Please enter a valid website URL');
+    }
+    return true;
+  }),
+  body('country').optional().trim().isLength({ max: 100 }).withMessage('Country cannot exceed 100 characters'),
+  body('timezone').optional().trim().isLength({ max: 50 }).withMessage('Timezone cannot exceed 50 characters'),
+  body('language').optional().trim().isLength({ max: 50 }).withMessage('Language cannot exceed 50 characters'),
+  body('twitter').optional().trim(),
+  body('linkedin').optional().trim(),
+  body('github').optional().trim()
+], async (req, res) => {
+  try {
+    // Check if user is admin or super admin
+    const User = require('../models/User');
+    const currentUser = await User.findById(req.userId).populate('role', 'name');
+    
+    if (!currentUser || (currentUser.role.name !== 'admin' && currentUser.role.name !== 'super admin')) {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone, location, city, bio, website, country, timezone, language, twitter, linkedin, github } = req.body;
+
+    console.log(`Received user meta data for user ${req.params.userId}:`, req.body);
+
+    // Define the fields to update
+    const fieldsToUpdate = {
+      phone,
+      location,
+      city,
+      bio,
+      website,
+      country,
+      timezone,
+      language,
+      twitter,
+      linkedin,
+      github
+    };
+
+    console.log('Fields to update:', fieldsToUpdate);
+
+    // Process each field
+    for (const [property, value] of Object.entries(fieldsToUpdate)) {
+      if (value !== undefined && value !== null && value !== '') {
+        // Check if record exists
+        const existingRecord = await UserMeta.findOne({
+          userId: req.params.userId,
+          meta_property: property
+        });
+
+        if (existingRecord) {
+          // Update existing record
+          existingRecord.meta_value = value;
+          await existingRecord.save();
+        } else {
+          // Create new record
+          const newRecord = new UserMeta({
+            userId: req.params.userId,
+            meta_property: property,
+            meta_value: value
+          });
+          await newRecord.save();
+        }
+      } else if (value === '') {
+        // Remove record if value is empty string
+        await UserMeta.deleteOne({
+          userId: req.params.userId,
+          meta_property: property
+        });
+      }
+    }
+
+    res.json({ message: 'User meta data updated successfully' });
+  } catch (error) {
+    console.error('Update user meta by ID error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   PUT /api/user-meta
 // @desc    Update current user's meta data
 // @access  Private
@@ -39,6 +164,7 @@ router.put('/', auth, [
     return true;
   }),
   body('location').optional().trim().isLength({ max: 100 }).withMessage('Location cannot exceed 100 characters'),
+  body('city').optional().trim().isLength({ max: 100 }).withMessage('City cannot exceed 100 characters'),
   body('bio').optional().trim().isLength({ max: 500 }).withMessage('Bio cannot exceed 500 characters'),
   body('website').optional().trim().custom((value) => {
     if (value && value.trim() && !/^https?:\/\/.+/.test(value)) {
@@ -47,6 +173,7 @@ router.put('/', auth, [
     return true;
   }),
   body('country').optional().trim().isLength({ max: 100 }).withMessage('Country cannot exceed 100 characters'),
+  body('timezone').optional().trim().isLength({ max: 50 }).withMessage('Timezone cannot exceed 50 characters'),
   body('language').optional().trim().isLength({ max: 50 }).withMessage('Language cannot exceed 50 characters'),
   body('twitter').optional().trim(),
   body('linkedin').optional().trim(),
@@ -58,7 +185,7 @@ router.put('/', auth, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { phone, location, bio, website, country, language, twitter, linkedin, github } = req.body;
+    const { phone, location, city, bio, website, country, timezone, language, twitter, linkedin, github } = req.body;
 
     console.log('Received user meta data:', req.body);
 
@@ -66,9 +193,11 @@ router.put('/', auth, [
     const fieldsToUpdate = {
       phone,
       location,
+      city,
       bio,
       website,
       country,
+      timezone,
       language,
       twitter,
       linkedin,

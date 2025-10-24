@@ -284,12 +284,16 @@ export function Sidebar() {
                           <button
                             onClick={() => toggleSection(child.name)}
                             className={cn(
-                              "flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors",
+                              "flex items-center w-full px-3 py-2 rounded-lg transition-colors",
                               "hover:bg-gray-100 dark:hover:bg-gray-700",
-                              hasActiveChildItem && "text-gray-700 dark:text-gray-300"
+                              hasActiveChildItem && "text-gray-700 dark:text-gray-300",
+                              collapsed ? "justify-center" : "justify-between"
                             )}
                           >
-                            <div className="flex items-center space-x-3">
+                            <div className={cn(
+                              "flex items-center",
+                              collapsed ? "" : "space-x-3"
+                            )}>
                               {Icon && <Icon className="w-5 h-5 flex-shrink-0" />}
                               {!collapsed && (
                                 <span className="text-sm font-medium">
@@ -339,10 +343,11 @@ export function Sidebar() {
                         key={childIndex}
                         href={child.href}
                         className={cn(
-                          "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                          "flex items-center px-3 py-2 rounded-lg transition-colors",
                           "hover:bg-gray-100 dark:hover:bg-gray-700",
                           isChildActive && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
-                          hasActiveChildItem && !isChildActive && "text-gray-700 dark:text-gray-300"
+                          hasActiveChildItem && !isChildActive && "text-gray-700 dark:text-gray-300",
+                          collapsed ? "justify-center" : "space-x-3"
                         )}
                       >
                         {Icon && <Icon className="w-5 h-5 flex-shrink-0" />}
@@ -360,9 +365,10 @@ export function Sidebar() {
               <Link
                 href={item.href || '#'}
                 className={cn(
-                  "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                  "flex items-center px-3 py-2 rounded-lg transition-colors",
                   "hover:bg-gray-100 dark:hover:bg-gray-700",
-                  isActive(item.href || '') && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                  isActive(item.href || '') && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
+                  collapsed ? "justify-center" : "space-x-3"
                 )}
               >
                 {item.icon && <item.icon className="w-5 h-5 flex-shrink-0" />}

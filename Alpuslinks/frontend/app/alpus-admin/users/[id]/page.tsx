@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Edit, Trash2, Key, Mail, Phone, Calendar, Shield, Activity, Globe, User, Clock } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Key, Mail, Phone, Calendar, Shield, Activity, Globe, User, Clock, X } from 'lucide-react'
 
 interface User {
   _id: string
@@ -21,6 +21,7 @@ interface User {
   isOnline?: boolean
   lastActiveLogin?: string
   createdAt: string
+  updatedAt?: string
   phone?: string
   website?: string
   bio?: string
@@ -31,6 +32,19 @@ interface User {
   loginCount?: number
   lastIpAddress?: string
   userAgent?: string
+  meta?: {
+    phone?: string
+    website?: string
+    bio?: string
+    location?: string
+    city?: string
+    country?: string
+    timezone?: string
+    language?: string
+    twitter?: string
+    linkedin?: string
+    github?: string
+  }
 }
 
 interface UserActivity {
@@ -59,11 +73,16 @@ export default function UserDetailPage() {
     lastName: '',
     email: '',
     phone: '',
-    website: '',
-    bio: '',
     location: '',
+    city: '',
+    country: '',
     timezone: '',
-    status: ''
+    language: '',
+    status: '',
+    emailVerified: false,
+    lastLogin: '',
+    createdAt: '',
+    updatedAt: ''
   })
   
   const [passwordForm, setPasswordForm] = useState({
@@ -87,16 +106,32 @@ export default function UserDetailPage() {
       
       if (userData) {
         setUser(userData)
+        
+        // Load user meta data from user object
+        let userMeta: any = {}
+        if (userData.meta) {
+          userMeta = userData.meta
+          console.log('Found meta data in user object:', userMeta)
+          console.log('Specific fields - location:', userMeta.location, 'city:', userMeta.city, 'country:', userMeta.country, 'timezone:', userMeta.timezone)
+        } else {
+          console.log('No meta data found in user object')
+        }
+        
         setEditForm({
           firstName: userData.firstName || '',
           lastName: userData.lastName || '',
           email: userData.email || '',
-          phone: userData.phone || '',
-          website: userData.website || '',
-          bio: userData.bio || '',
-          location: userData.location || '',
-          timezone: userData.timezone || '',
-          status: userData.status || 'active'
+          phone: userMeta.phone || userData.phone || '',
+          location: userMeta.location || userData.location || '',
+          city: userMeta.city || '',
+          country: userMeta.country || '',
+          timezone: userMeta.timezone || '',
+          language: userMeta.language || '',
+          status: userData.status || 'active',
+          emailVerified: userData.emailVerified || false,
+          lastLogin: userData.lastLogin || '',
+          createdAt: userData.createdAt || '',
+          updatedAt: userData.updatedAt || ''
         })
       }
     } catch (err: any) {
@@ -126,7 +161,29 @@ export default function UserDetailPage() {
 
     try {
       setSaving(true)
-      await apiService.updateUser(user._id, editForm)
+      
+      // Update basic user info
+      const basicUserData = {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        email: editForm.email,
+        status: editForm.status,
+        phone: editForm.phone,
+        location: editForm.location
+      }
+      await apiService.updateUser(user._id, basicUserData)
+      
+      // Update user meta data
+      const metaData = {
+        phone: editForm.phone,
+        location: editForm.location,
+        city: editForm.city,
+        country: editForm.country,
+        timezone: editForm.timezone,
+        language: editForm.language
+      }
+      await apiService.updateUserMetaById(user._id, metaData)
+      
       toast.success('User updated successfully')
       loadUser()
     } catch (err: any) {
@@ -255,11 +312,11 @@ export default function UserDetailPage() {
 
   return (
     <ProtectedRoute allowedRoles={["super admin", "admin"]}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-6xl mx-auto px-4">
+          <div className="max-w-4xl w-full mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => router.push('/alpus-admin/users/all')}
@@ -268,88 +325,83 @@ export default function UserDetailPage() {
                   <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {user.firstName} {user.lastName}
-                  </h1>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">User Details & Activity</p>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Edit User: {user.firstName} {user.lastName}
+                  </h2>
                 </div>
               </div>
-              
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={handleUpdate}
-                  disabled={saving}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Save Changes
-                    </>
-                  )}
-                </button>
-                <button
                   onClick={handlePasswordClick}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <Key className="w-4 h-4 mr-2" />
                   Change Password
                 </button>
                 <button
                   onClick={handleDeleteClick}
-                  className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete User
+                  Delete
                 </button>
-              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* User Information */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Basic Information */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Basic Information</h2>
-                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(user.status)}`}>
-                    {user.status}
-                  </span>
+            <form onSubmit={handleUpdate} className="p-6">
+              {/* Form Fields */}
+              <div className="space-y-6">
+                {/* First Name Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      First Name
+                    </label>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">First Name</label>
+                  <div className="flex-1">
                     <input
                       type="text"
                       value={editForm.firstName}
                       onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter first name"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Last Name</label>
+                </div>
+
+                {/* Last Name Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Last Name
+                    </label>
+                  </div>
+                  <div className="flex-1">
                     <input
                       type="text"
                       value={editForm.lastName}
                       onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter last name"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                </div>
+
+                {/* Email Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Email
+                    </label>
+                  </div>
+                  <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <input
                         type="email"
                         value={editForm.email}
                         onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter email address"
                       />
                       {user?.emailVerified && (
                         <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
@@ -358,170 +410,277 @@ export default function UserDetailPage() {
                       )}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+                </div>
+
+                {/* Phone Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Phone
+                    </label>
+                  </div>
+                  <div className="flex-1">
                     <input
                       type="tel"
                       value={editForm.phone}
                       onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter phone number"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
-                    <div className="flex items-center space-x-2">
-                      <Shield className="w-4 h-4 text-gray-400" />
-                      <p className="text-gray-900 dark:text-white">{user?.role?.name || 'No role assigned'}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Member Since</label>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <p className="text-gray-900 dark:text-white">{user ? formatDate(user.createdAt) : ''}</p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              {/* Additional Information */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Additional Information</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Website</label>
-                    <input
-                      type="url"
-                      value={editForm.website}
-                      onChange={(e) => setEditForm({...editForm, website: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="https://example.com"
-                    />
+
+                {/* Location Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Location
+                    </label>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Location</label>
+                  <div className="flex-1">
                     <input
                       type="text"
                       value={editForm.location}
                       onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="City, Country"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter address"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Timezone</label>
+                </div>
+
+                {/* City Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      City
+                    </label>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editForm.city}
+                      onChange={(e) => setEditForm({...editForm, city: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter city"
+                    />
+                  </div>
+                </div>
+
+                {/* Country Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Country
+                    </label>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editForm.country}
+                      onChange={(e) => setEditForm({...editForm, country: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter country"
+                    />
+                  </div>
+                </div>
+
+                {/* Timezone Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Timezone
+                    </label>
+                  </div>
+                  <div className="flex-1">
                     <input
                       type="text"
                       value={editForm.timezone}
                       onChange={(e) => setEditForm({...editForm, timezone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                       placeholder="UTC+0"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bio</label>
-                    <textarea
-                      value={editForm.bio}
-                      onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="Tell us about yourself..."
-                    />
-                  </div>
                 </div>
-              </div>
 
-              {/* Security Information */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Security & Activity</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">User Status</label>
+       {/* Language Row */}
+       <div className="flex items-center">
+         <div className="w-32 flex-shrink-0">
+           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+             Language
+           </label>
+         </div>
+         <div className="flex-1">
+           <select
+             value={editForm.language}
+             onChange={(e) => setEditForm({...editForm, language: e.target.value})}
+             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+           >
+             <option value="">Select language...</option>
+             <option value="English">English</option>
+             <option value="Spanish">Spanish</option>
+             <option value="French">French</option>
+             <option value="German">German</option>
+             <option value="Italian">Italian</option>
+             <option value="Portuguese">Portuguese</option>
+             <option value="Russian">Russian</option>
+             <option value="Japanese">Japanese</option>
+             <option value="Korean">Korean</option>
+             <option value="Chinese">Chinese</option>
+             <option value="Arabic">Arabic</option>
+             <option value="Hindi">Hindi</option>
+             <option value="Dutch">Dutch</option>
+             <option value="Swedish">Swedish</option>
+             <option value="Norwegian">Norwegian</option>
+             <option value="Danish">Danish</option>
+             <option value="Finnish">Finnish</option>
+             <option value="Polish">Polish</option>
+             <option value="Turkish">Turkish</option>
+             <option value="Thai">Thai</option>
+             <option value="Vietnamese">Vietnamese</option>
+             <option value="Indonesian">Indonesian</option>
+             <option value="Malay">Malay</option>
+             <option value="Filipino">Filipino</option>
+             <option value="Hebrew">Hebrew</option>
+             <option value="Ukrainian">Ukrainian</option>
+             <option value="Czech">Czech</option>
+             <option value="Hungarian">Hungarian</option>
+             <option value="Romanian">Romanian</option>
+             <option value="Bulgarian">Bulgarian</option>
+             <option value="Croatian">Croatian</option>
+             <option value="Slovak">Slovak</option>
+             <option value="Slovenian">Slovenian</option>
+             <option value="Estonian">Estonian</option>
+             <option value="Latvian">Latvian</option>
+             <option value="Lithuanian">Lithuanian</option>
+             <option value="Greek">Greek</option>
+             <option value="Icelandic">Icelandic</option>
+             <option value="Irish">Irish</option>
+             <option value="Welsh">Welsh</option>
+             <option value="Maltese">Maltese</option>
+             <option value="Catalan">Catalan</option>
+             <option value="Basque">Basque</option>
+             <option value="Galician">Galician</option>
+             <option value="Afrikaans">Afrikaans</option>
+             <option value="Swahili">Swahili</option>
+             <option value="Amharic">Amharic</option>
+             <option value="Bengali">Bengali</option>
+             <option value="Gujarati">Gujarati</option>
+             <option value="Kannada">Kannada</option>
+             <option value="Malayalam">Malayalam</option>
+             <option value="Marathi">Marathi</option>
+             <option value="Nepali">Nepali</option>
+             <option value="Punjabi">Punjabi</option>
+             <option value="Sinhala">Sinhala</option>
+             <option value="Tamil">Tamil</option>
+             <option value="Telugu">Telugu</option>
+             <option value="Urdu">Urdu</option>
+           </select>
+         </div>
+       </div>
+
+                {/* Status Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Status
+                    </label>
+                  </div>
+                  <div className="flex-1">
                     <select
                       value={editForm.status}
                       onChange={(e) => setEditForm({...editForm, status: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                       <option value="suspended">Suspended</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Two-Factor Authentication</label>
+                </div>
+
+                {/* Email Verified Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Email Verified
+                    </label>
+                  </div>
+                  <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${user?.twoFactorEnabled ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                      <p className="text-gray-900 dark:text-white">
-                        {user?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
-                      </p>
+                      <div className={`w-2 h-2 rounded-full ${editForm.emailVerified ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                      <span className="text-gray-900 dark:text-white">
+                        {editForm.emailVerified ? 'Verified' : 'Not Verified'}
+                      </span>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Login Count</label>
-                    <p className="text-gray-900 dark:text-white">{user?.loginCount || 0} times</p>
+                </div>
+
+                {/* Last Login Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Last Login
+                    </label>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Last Login</label>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <p className="text-gray-900 dark:text-white">
-                        {user?.lastLogin ? formatDate(user.lastLogin) : 'Never'}
-                      </p>
-                    </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editForm.lastLogin ? new Date(editForm.lastLogin).toLocaleString() : 'Never'}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                      readOnly
+                    />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Status</label>
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${user?.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                      <p className="text-gray-900 dark:text-white">
-                        {user?.isOnline ? 'Online' : 'Offline'}
-                      </p>
                     </div>
+
+                {/* Created At Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Created At
+                    </label>
                   </div>
-                  {user?.lastIpAddress && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Last IP Address</label>
-                      <p className="text-gray-900 dark:text-white font-mono text-sm">{user.lastIpAddress}</p>
-                    </div>
-                  )}
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editForm.createdAt ? new Date(editForm.createdAt).toLocaleString() : ''}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                      readOnly
+                    />
+              </div>
+            </div>
+
+                {/* Updated At Row */}
+                <div className="flex items-center">
+                  <div className="w-32 flex-shrink-0">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Updated At
+                    </label>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editForm.updatedAt ? new Date(editForm.updatedAt).toLocaleString() : ''}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+                      readOnly
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Activity Feed */}
-            <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Recent Activity</h2>
-                
-                {activities.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400">No recent activity</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {activities.slice(0, 10).map((activity) => (
-                      <div key={activity._id} className="border-l-2 border-blue-500 pl-4">
-                        <p className="text-sm text-gray-900 dark:text-white">{activity.description}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {formatDate(activity.timestamp)}
-                        </p>
-                        {activity.ipAddress && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">
-                            {activity.ipAddress}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Save Button */}
+              <div className="mt-8 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
             </div>
+            </form>
           </div>
         </div>
-
 
         {/* Delete Confirmation Modal */}
         {deleting && (

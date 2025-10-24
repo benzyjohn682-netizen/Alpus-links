@@ -5,8 +5,10 @@ import AccountForm from '@/components/dashboard/AccountForm'
 export default function AdvertiserAccountPage() {
   return (
     <ProtectedRoute allowedRoles={["advertiser"]}>
-      <div className="min-h-screen flex items-start justify-center bg-gray-50 dark:bg-gray-900 py-10">
-        <AccountForm />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <AccountForm />
+        </div>
       </div>
     </ProtectedRoute>
   )

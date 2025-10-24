@@ -217,6 +217,10 @@ class ApiService {
     return this.request('/user-meta')
   }
 
+  async getUserMetaById(userId: string) {
+    return this.request(`/user-meta/by-user/${userId}`)
+  }
+
   async updateUserMeta(payload: {
     phone?: string
     location?: string
@@ -231,6 +235,26 @@ class ApiService {
     }
   }) {
     return this.request('/user-meta', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async updateUserMetaById(userId: string, payload: {
+    phone?: string
+    location?: string
+    bio?: string
+    website?: string
+    country?: string
+    language?: string
+    timezone?: string
+    socialLinks?: {
+      twitter?: string
+      linkedin?: string
+      github?: string
+    }
+  }) {
+    return this.request(`/user-meta/by-user/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
