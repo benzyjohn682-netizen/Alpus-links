@@ -21,7 +21,7 @@ const loginSessionSchema = new mongoose.Schema({
   },
   loginMethod: {
     type: String,
-    enum: ['email', 'google', 'email_2fa'],
+    enum: ['email', 'google', 'email_2fa', 'admin_force', 'manual_create', 'api_refresh'],
     default: 'email'
   },
   isActive: {

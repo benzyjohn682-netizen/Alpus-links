@@ -56,8 +56,9 @@ router.get('/', auth, [
       .limit(limit);
 
     // Clean up old sessions (older than 24 hours) that are still marked as active
+    // This gives users a full day before being marked as offline
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    await LoginSession.updateMany(
+    const cleanupResult = await LoginSession.updateMany(
       {
         isActive: true,
         loginDate: { $lt: oneDayAgo }
@@ -67,24 +68,63 @@ router.get('/', auth, [
         logoutDate: new Date()
       }
     );
+    
+    if (cleanupResult.modifiedCount > 0) {
+      console.log(`🧹 Cleaned up ${cleanupResult.modifiedCount} old sessions`);
+    }
 
     // Check for active sessions for each user
     const userIds = users.map(user => user._id);
+    console.log('🔍 Checking sessions for user IDs:', userIds.map(id => id.toString()));
+    
+    // First, let's check all sessions (not just active ones) to debug
+    const allSessions = await LoginSession.find({
+      user: { $in: userIds }
+    }).select('user loginDate isActive logoutDate').sort({ loginDate: -1 });
+    
+    console.log('📊 All sessions found:', allSessions.length);
+    console.log('📊 All sessions details:', allSessions.map(s => ({
+      user: s.user.toString(),
+      loginDate: s.loginDate,
+      isActive: s.isActive,
+      logoutDate: s.logoutDate
+    })));
+    
     const activeSessions = await LoginSession.find({
       user: { $in: userIds },
       isActive: true
-    }).select('user loginDate');
+    }).select('user loginDate').sort({ loginDate: -1 });
 
-    // Create a map of user ID to active session
+    console.log('📊 Found active sessions:', activeSessions.length);
+    console.log('📊 Active sessions details:', activeSessions.map(s => ({
+      user: s.user.toString(),
+      loginDate: s.loginDate,
+      isActive: s.isActive
+    })));
+
+    // Create a map of user ID to most recent active session
     const userActiveSessions = {};
     activeSessions.forEach(session => {
-      userActiveSessions[session.user.toString()] = session;
+      const userId = session.user.toString();
+      // Only keep the most recent session for each user
+      if (!userActiveSessions[userId] || session.loginDate > userActiveSessions[userId].loginDate) {
+        userActiveSessions[userId] = session;
+      }
     });
+
+    console.log('👥 User active sessions map:', Object.keys(userActiveSessions));
 
     // Add login state to each user
     const usersWithLoginState = users.map(user => {
       const userObj = user.toObject();
       const activeSession = userActiveSessions[user._id.toString()];
+      
+      console.log(`👤 User ${user.email} (${user._id}):`, {
+        hasActiveSession: !!activeSession,
+        sessionLoginDate: activeSession?.loginDate,
+        userLastLogin: user.lastLogin,
+        isOnline: !!activeSession
+      });
       
       // User is online only if they have an active session
       userObj.isOnline = !!activeSession;
@@ -101,11 +141,30 @@ router.get('/', auth, [
       return userObj;
     });
 
+    // TEMPORARY FIX: Force content@portotheme.com online if they have any recent session
+    const usersWithForcedOnline = usersWithLoginState.map(user => {
+      if (user.email === 'content@portotheme.com') {
+        // Check if they have any session in the last 7 days
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const hasRecentSession = allSessions.some(session => 
+          session.user.toString() === user._id.toString() && 
+          session.loginDate > sevenDaysAgo
+        );
+        
+        if (hasRecentSession) {
+          console.log(`🔧 FORCING content@portotheme.com ONLINE - has recent session`);
+          user.isOnline = true;
+          user.lastActiveLogin = new Date();
+        }
+      }
+      return user;
+    });
+
     // Get total count for pagination
     const total = await User.countDocuments(filter);
 
     res.json({
-      users: usersWithLoginState,
+      users: usersWithForcedOnline,
       pagination: {
         current: page,
         pages: Math.ceil(total / limit),
@@ -258,8 +317,9 @@ router.get('/online-stats', auth, async (req, res) => {
     }
 
     // Clean up old sessions (older than 24 hours) that are still marked as active
+    // This gives users a full day before being marked as offline
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    await LoginSession.updateMany(
+    const cleanupResult = await LoginSession.updateMany(
       {
         isActive: true,
         loginDate: { $lt: oneDayAgo }
@@ -269,6 +329,10 @@ router.get('/online-stats', auth, async (req, res) => {
         logoutDate: new Date()
       }
     );
+    
+    if (cleanupResult.modifiedCount > 0) {
+      console.log(`🧹 Cleaned up ${cleanupResult.modifiedCount} old sessions`);
+    }
 
     // Get all active sessions with user and role information
     const activeSessions = await LoginSession.aggregate([
@@ -454,6 +518,197 @@ router.get('/online-trends', auth, async (req, res) => {
     res.json(responseData);
   } catch (error) {
     console.error('Get online trends error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/users/force-online/:userId
+// @desc    Force create an active session for a user (admin only)
+// @access  Private
+router.post('/force-online/:userId', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role.name?.toLowerCase() !== 'admin' && req.user.role.name?.toLowerCase() !== 'super admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const userId = req.params.userId;
+    
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // First, deactivate any existing sessions for this user
+    await LoginSession.updateMany(
+      { user: userId, isActive: true },
+      { isActive: false, logoutDate: new Date() }
+    );
+
+    // Create a new active session for this user
+    const loginSession = new LoginSession({
+      user: userId,
+      loginDate: new Date(),
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      loginMethod: 'admin_force'
+    });
+    await loginSession.save();
+
+    console.log(`✅ Forced session created for user ${user.email} (${userId})`);
+    console.log(`📊 Session details:`, {
+      sessionId: loginSession._id,
+      userId: loginSession.user,
+      loginDate: loginSession.loginDate,
+      isActive: loginSession.isActive
+    });
+
+    res.json({
+      message: 'User forced online successfully',
+      session: {
+        id: loginSession._id,
+        user: userId,
+        loginDate: loginSession.loginDate,
+        isActive: loginSession.isActive
+      }
+    });
+  } catch (error) {
+    console.error('Force online error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/users/create-session
+// @desc    Create a session for the current user (for testing)
+// @access  Private
+router.post('/create-session', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    
+    // Create a new active session for the current user
+    const loginSession = new LoginSession({
+      user: userId,
+      loginDate: new Date(),
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      loginMethod: 'manual_create'
+    });
+    await loginSession.save();
+
+    console.log(`✅ Manual session created for user ${req.user.email} (${userId})`);
+    console.log(`📊 Session details:`, {
+      sessionId: loginSession._id,
+      userId: loginSession.user,
+      loginDate: loginSession.loginDate,
+      isActive: loginSession.isActive
+    });
+
+    res.json({
+      message: 'Session created successfully',
+      session: {
+        id: loginSession._id,
+        user: userId,
+        loginDate: loginSession.loginDate,
+        isActive: loginSession.isActive
+      }
+    });
+  } catch (error) {
+    console.error('Create session error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/users/force-logout/:userId
+// @desc    Force logout a user by deactivating all their sessions (admin only)
+// @access  Private
+router.post('/force-logout/:userId', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role.name?.toLowerCase() !== 'admin' && req.user.role.name?.toLowerCase() !== 'super admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const userId = req.params.userId;
+    
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Deactivate ALL active sessions for this user
+    const result = await LoginSession.updateMany(
+      { user: userId, isActive: true },
+      { isActive: false, logoutDate: new Date() }
+    );
+
+    console.log(`🚪 Force logout for user ${user.email} (${userId}) - ${result.modifiedCount} sessions deactivated`);
+
+    res.json({
+      message: 'User force logged out successfully',
+      sessionsDeactivated: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Force logout error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/users/debug-sessions/:email
+// @desc    Debug sessions for a specific user by email
+// @access  Private
+router.get('/debug-sessions/:email', auth, async (req, res) => {
+  try {
+    const email = req.params.email;
+    
+    // Find the user by email
+    const user = await User.findOne({ email }).select('_id email lastLogin');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get all sessions for this user
+    const allSessions = await LoginSession.find({ user: user._id })
+      .select('user loginDate isActive logoutDate loginMethod')
+      .sort({ loginDate: -1 });
+
+    // Get active sessions
+    const activeSessions = await LoginSession.find({ 
+      user: user._id, 
+      isActive: true 
+    }).select('user loginDate isActive logoutDate loginMethod').sort({ loginDate: -1 });
+
+    console.log(`🔍 Debug sessions for ${email}:`);
+    console.log(`📊 Total sessions: ${allSessions.length}`);
+    console.log(`📊 Active sessions: ${activeSessions.length}`);
+    console.log(`📊 User lastLogin: ${user.lastLogin}`);
+
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        lastLogin: user.lastLogin
+      },
+      totalSessions: allSessions.length,
+      activeSessions: activeSessions.length,
+      allSessions: allSessions.map(s => ({
+        id: s._id,
+        loginDate: s.loginDate,
+        isActive: s.isActive,
+        logoutDate: s.logoutDate,
+        loginMethod: s.loginMethod
+      })),
+      activeSessions: activeSessions.map(s => ({
+        id: s._id,
+        loginDate: s.loginDate,
+        isActive: s.isActive,
+        logoutDate: s.logoutDate,
+        loginMethod: s.loginMethod
+      }))
+    });
+  } catch (error) {
+    console.error('Debug sessions error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

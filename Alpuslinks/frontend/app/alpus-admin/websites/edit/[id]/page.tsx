@@ -10,8 +10,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MultiSelect } from '@/components/ui/multi-select'
 import CustomSelect from '@/components/ui/custom-select'
-import CountrySelect from '@/components/ui/country-select'
-import LanguageSelect from '@/components/ui/language-select'
 import toast from 'react-hot-toast'
 
 interface Website {
@@ -71,7 +69,47 @@ interface Website {
   }
 }
 
+const countries = [
+  { value: 'United States', label: '🇺🇸 United States' },
+  { value: 'United Kingdom', label: '🇬🇧 United Kingdom' },
+  { value: 'Canada', label: '🇨🇦 Canada' },
+  { value: 'Australia', label: '🇦🇺 Australia' },
+  { value: 'Germany', label: '🇩🇪 Germany' },
+  { value: 'France', label: '🇫🇷 France' },
+  { value: 'Spain', label: '🇪🇸 Spain' },
+  { value: 'Italy', label: '🇮🇹 Italy' },
+  { value: 'Netherlands', label: '🇳🇱 Netherlands' },
+  { value: 'Sweden', label: '🇸🇪 Sweden' },
+  { value: 'Norway', label: '🇳🇴 Norway' },
+  { value: 'Denmark', label: '🇩🇰 Denmark' },
+  { value: 'Finland', label: '🇫🇮 Finland' },
+  { value: 'Japan', label: '🇯🇵 Japan' },
+  { value: 'South Korea', label: '🇰🇷 South Korea' },
+  { value: 'China', label: '🇨🇳 China' },
+  { value: 'India', label: '🇮🇳 India' },
+  { value: 'Brazil', label: '🇧🇷 Brazil' },
+  { value: 'Mexico', label: '🇲🇽 Mexico' },
+  { value: 'Argentina', label: '🇦🇷 Argentina' }
+]
 
+const languages = [
+  { value: 'en', label: '🇺🇸 English' },
+  { value: 'es', label: '🇪🇸 Spanish' },
+  { value: 'fr', label: '🇫🇷 French' },
+  { value: 'de', label: '🇩🇪 German' },
+  { value: 'it', label: '🇮🇹 Italian' },
+  { value: 'pt', label: '🇵🇹 Portuguese' },
+  { value: 'ru', label: '🇷🇺 Russian' },
+  { value: 'ja', label: '🇯🇵 Japanese' },
+  { value: 'ko', label: '🇰🇷 Korean' },
+  { value: 'zh', label: '🇨🇳 Chinese' }
+]
+
+const statusOptions = [
+  { value: 'pending', label: '⏳ Pending' },
+  { value: 'active', label: '✅ Active' },
+  { value: 'rejected', label: '❌ Rejected' }
+]
 
 export default function EditWebsitePage() {
   const { user } = useAuth()
@@ -113,7 +151,8 @@ export default function EditWebsitePage() {
     country: '',
     language: 'en',
     minWordCount: '',
-    maxLinks: ''
+    maxLinks: '',
+    status: 'pending' as string
   })
   
   const [website, setWebsite] = useState<Website | null>(null)
@@ -189,7 +228,8 @@ export default function EditWebsitePage() {
             country: websiteData.country || '',
             language: websiteData.language || 'en',
             minWordCount: websiteData.meta?.minWordCount?.toString() || '',
-            maxLinks: websiteData.meta?.maxLinks?.toString() || ''
+            maxLinks: websiteData.meta?.maxLinks?.toString() || '',
+            status: websiteData.status || 'pending'
           })
           
           console.log('Form data set with categories:', categoryIds)
@@ -213,7 +253,7 @@ export default function EditWebsitePage() {
     // Only load website after categories are loaded
     if (categories.length > 0) {
       console.log('Categories loaded, now loading website...')
-    loadWebsite()
+      loadWebsite()
     } else {
       console.log('Categories not loaded yet, waiting...')
     }
@@ -247,6 +287,7 @@ export default function EditWebsitePage() {
         turnaroundTimeDays: parseInt(formData.tatDays) || 7,
         country: formData.country,
         language: formData.language,
+        status: formData.status,
         requirements: {
           ...(formData.minWordCount && { minWordCount: parseInt(formData.minWordCount) }),
           ...(formData.maxLinks && { maxLinks: parseInt(formData.maxLinks) })
@@ -270,7 +311,7 @@ export default function EditWebsitePage() {
         
         // Redirect after 2 seconds
         setTimeout(() => {
-          router.push('/publisher/websites')
+          router.push('/alpus-admin/websites')
         }, 2000)
       }
     } catch (err) {
@@ -282,7 +323,7 @@ export default function EditWebsitePage() {
 
   if (loading) {
     return (
-      <ProtectedRoute allowedRoles={["publisher"]}>
+      <ProtectedRoute allowedRoles={["super admin", "admin"]}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-center min-h-[400px]">
@@ -299,17 +340,17 @@ export default function EditWebsitePage() {
 
   if (error || !website) {
     return (
-      <ProtectedRoute allowedRoles={["publisher"]}>
+      <ProtectedRoute allowedRoles={["super admin", "admin"]}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
               <div className="flex items-center mb-4">
                 <Link
-                  href="/publisher/websites"
+                  href="/alpus-admin/websites"
                   className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mr-4"
                 >
                   <ArrowLeft className="w-4 h-4 mr-1" />
-                  Back to My Websites
+                  Back to Website Management
                 </Link>
               </div>
             </div>
@@ -327,11 +368,11 @@ export default function EditWebsitePage() {
                 The website you're looking for doesn't exist or you don't have permission to access it.
               </p>
               <Link
-                href="/publisher/websites"
+                href="/alpus-admin/websites"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to My Websites
+                Back to Website Management
               </Link>
             </div>
           </div>
@@ -341,28 +382,27 @@ export default function EditWebsitePage() {
   }
 
   return (
-    <ProtectedRoute allowedRoles={["publisher"]}>
+    <ProtectedRoute allowedRoles={["super admin", "admin"]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center mb-4">
               <Link
-                href="/publisher/websites"
+                href="/alpus-admin/websites"
                 className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
-                Back to My Websites
+                Back to Website Management
               </Link>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Edit Website
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Update your website information for guest posting and link insertion services
+              Update website information for guest posting and link insertion services
             </p>
           </div>
-
 
           {/* Form Content */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -374,7 +414,7 @@ export default function EditWebsitePage() {
                     Update Website Details
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Update your website's categories, pricing, and requirements.
+                    Update the website's categories, pricing, requirements, and status.
                   </p>
                 </div>
 
@@ -407,15 +447,33 @@ export default function EditWebsitePage() {
                     </div>
                   </div>
 
+                  {/* Status Row */}
+                  <div className="flex items-center">
+                    <div className="w-32 flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Status *
+                      </label>
+                    </div>
+                    <div className="flex-1">
+                      <CustomSelect
+                        options={statusOptions}
+                        value={formData.status}
+                        onChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                        placeholder="Select status"
+                      />
+                    </div>
+                  </div>
+
                   {/* Country Row */}
                   <div className="flex items-center">
                     <div className="w-32 flex-shrink-0">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Country *
                       </label>
-            </div>
+                    </div>
                     <div className="flex-1">
-                      <CountrySelect
+                      <CustomSelect
+                        options={countries}
                         value={formData.country}
                         onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
                         placeholder="Select country"
@@ -434,7 +492,8 @@ export default function EditWebsitePage() {
                       </label>
                     </div>
                     <div className="flex-1">
-                      <LanguageSelect
+                      <CustomSelect
+                        options={languages}
                         value={formData.language}
                         onChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
                         placeholder="Select language"
@@ -578,7 +637,7 @@ export default function EditWebsitePage() {
                 {/* Action Buttons */}
                 <div className="mt-8 flex justify-end space-x-4">
                   <Button
-                    onClick={() => router.push('/publisher/websites')}
+                    onClick={() => router.push('/alpus-admin/websites')}
                     variant="outline"
                     className="px-6 py-3"
                   >

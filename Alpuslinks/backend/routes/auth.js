@@ -97,6 +97,14 @@ router.post('/login', [
       loginMethod: 'email'
     });
     await loginSession.save();
+    
+    console.log(`✅ Login session created for user ${user.email} (${user._id})`);
+    console.log(`📊 Session details:`, {
+      sessionId: loginSession._id,
+      userId: loginSession.user,
+      loginDate: loginSession.loginDate,
+      isActive: loginSession.isActive
+    });
 
     // Create JWT token
     const payload = {
@@ -420,6 +428,14 @@ router.post('/google', async (req, res) => {
       });
       await loginSession.save();
       
+      console.log(`✅ Google login session created for new user ${user.email} (${user._id})`);
+      console.log(`📊 Session details:`, {
+        sessionId: loginSession._id,
+        userId: loginSession.user,
+        loginDate: loginSession.loginDate,
+        isActive: loginSession.isActive
+      });
+      
       await user.populate('role', 'name permissions');
     } else {
       // Update last login and avatar if needed
@@ -438,6 +454,14 @@ router.post('/google', async (req, res) => {
         loginMethod: 'google'
       });
       await loginSession.save();
+      
+      console.log(`✅ Google login session created for existing user ${user.email} (${user._id})`);
+      console.log(`📊 Session details:`, {
+        sessionId: loginSession._id,
+        userId: loginSession.user,
+        loginDate: loginSession.loginDate,
+        isActive: loginSession.isActive
+      });
     }
 
     // Create JWT token
@@ -742,6 +766,14 @@ router.post('/verify-2fa-code', [
         loginMethod: 'email_2fa'
       });
       await loginSession.save();
+      
+      console.log(`✅ 2FA login session created for user ${user.email} (${user._id})`);
+      console.log(`📊 Session details:`, {
+        sessionId: loginSession._id,
+        userId: loginSession.user,
+        loginDate: loginSession.loginDate,
+        isActive: loginSession.isActive
+      });
 
       // Create JWT token
       const payload = {
@@ -879,9 +911,14 @@ router.post('/logout', authMiddleware, async (req, res) => {
     });
     
     console.log('Active sessions found:', activeSessions.length);
+    console.log('Session details:', activeSessions.map(s => ({
+      id: s._id,
+      loginDate: s.loginDate,
+      isActive: s.isActive
+    })));
     
-    // Update the most recent active login session for this user
-    const result = await LoginSession.findOneAndUpdate(
+    // Update ALL active sessions for this user (not just the most recent one)
+    const result = await LoginSession.updateMany(
       { 
         user: req.userId, 
         isActive: true 
@@ -889,11 +926,10 @@ router.post('/logout', authMiddleware, async (req, res) => {
       { 
         isActive: false, 
         logoutDate: new Date() 
-      },
-      { sort: { loginDate: -1 } }
+      }
     );
     
-    console.log('Logout result:', result ? 'Session updated' : 'No active session found');
+    console.log('Logout result:', result.modifiedCount, 'sessions deactivated');
 
     res.json({ message: 'Logout successful' });
   } catch (error) {

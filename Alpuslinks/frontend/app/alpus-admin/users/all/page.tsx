@@ -63,6 +63,15 @@ export default function AllUsersPage() {
     loadRoles()
   }, [currentPage, pageSize, search, roleFilter, statusFilter])
 
+  // Auto-refresh user list every 30 seconds to keep login states current
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadUsers()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [currentPage, pageSize, search, roleFilter, statusFilter])
+
   useEffect(() => {
     loadUserStats()
   }, [])
@@ -170,6 +179,21 @@ export default function AllUsersPage() {
   const handleDeleteClick = (user: User) => {
     setDeletingUser(user)
   }
+
+
+  const handleCreateSession = async () => {
+    try {
+      const response = await apiService.createSession()
+      if (response.data) {
+        toast.success('Session created successfully!')
+        loadUsers() // Refresh the user list
+      }
+    } catch (err) {
+      toast.error('Failed to create session')
+      console.error('Create session error:', err)
+    }
+  }
+
 
   const handleDeleteConfirm = async () => {
     if (!deletingUser) return
@@ -355,11 +379,19 @@ export default function AllUsersPage() {
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and monitor all users in the system</p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                  </svg>
-                  <span>{users.length} users</span>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={handleCreateSession}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Create My Session
+                  </button>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                    <span>{users.length} users</span>
+                  </div>
                 </div>
               </div>
 
@@ -808,7 +840,7 @@ export default function AllUsersPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           <div className="flex items-center space-x-2">
-                            <div className={`w-2 h-2 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                            <div className={`w-2 h-2 rounded-full ${user.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
                             <span className="text-sm">
                               {user.isOnline ? (
                                 <div className="flex flex-col">

@@ -293,6 +293,30 @@ class ApiService {
     })
   }
 
+  async forceUserOnline(userId: string) {
+    return this.request(`/users/force-online/${userId}`, {
+      method: 'POST',
+    })
+  }
+
+  async createSession() {
+    return this.request('/users/create-session', {
+      method: 'POST',
+    })
+  }
+
+  async forceUserLogout(userId: string) {
+    return this.request(`/users/force-logout/${userId}`, {
+      method: 'POST',
+    })
+  }
+
+  async debugUserSessions(email: string) {
+    return this.request(`/users/debug-sessions/${email}`, {
+      method: 'GET',
+    })
+  }
+
   async logout() {
     return this.request('/auth/logout', {
       method: 'POST',

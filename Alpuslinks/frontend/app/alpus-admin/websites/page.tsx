@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { apiService } from '@/lib/api'
 import { WebsiteTable } from '@/components/website/WebsiteTable'
@@ -61,6 +62,7 @@ interface AdminWebsiteStats {
 }
 
 export default function AdminWebsitesPage() {
+  const router = useRouter()
   const [websites, setWebsites] = useState<Website[]>([])
   const [stats, setStats] = useState<AdminWebsiteStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -80,8 +82,6 @@ export default function AdminWebsitesPage() {
   const [isSelectAll, setIsSelectAll] = useState(false)
   const [deletingWebsite, setDeletingWebsite] = useState<Website | null>(null)
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
-  const [editingWebsite, setEditingWebsite] = useState<Website | null>(null)
-  const [showEditModal, setShowEditModal] = useState(false)
 
   const loadWebsites = useCallback(async () => {
     try {
@@ -210,42 +210,10 @@ export default function AdminWebsitesPage() {
   }
 
   const handleEditWebsite = (website: Website) => {
-    setEditingWebsite(website)
-    setShowEditModal(true)
+    // Navigate to the edit page instead of opening a modal
+    router.push(`/alpus-admin/websites/edit/${website._id}`)
   }
 
-  const handleEditConfirm = async (updatedData: Partial<Website>) => {
-    if (!editingWebsite) return
-
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await apiService.updateWebsite(editingWebsite._id, updatedData)
-      
-      if (response.data) {
-        setWebsites(prev => 
-          prev.map(website => 
-            website._id === editingWebsite._id ? { ...website, ...updatedData } : website
-          )
-        )
-        toast.success('Website updated successfully!')
-        setEditingWebsite(null)
-        setShowEditModal(false)
-        loadStats() // Refresh stats
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update website'
-      setError(errorMessage)
-      setTimeout(() => setError(null), 5000)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleEditCancel = () => {
-    setEditingWebsite(null)
-    setShowEditModal(false)
-  }
 
   const handleFilterChange = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
@@ -757,15 +725,6 @@ export default function AdminWebsitesPage() {
           </div>
         )}
 
-        {/* Edit Website Modal */}
-        {showEditModal && editingWebsite && (
-          <EditWebsiteModal
-            website={editingWebsite}
-            onSave={handleEditConfirm}
-            onCancel={handleEditCancel}
-            loading={loading}
-          />
-        )}
 
         {/* Loading Overlay for Bulk Operations */}
         {loading && selectedWebsites.length > 0 && (
@@ -1146,343 +1105,3 @@ function AdminWebsiteTable({
   )
 }
 
-// Edit Website Modal Component
-interface EditWebsiteModalProps {
-  website: Website
-  onSave: (updatedData: Partial<Website>) => void
-  onCancel: () => void
-  loading: boolean
-}
-
-function EditWebsiteModal({ website, onSave, onCancel, loading }: EditWebsiteModalProps) {
-  const [formData, setFormData] = useState({
-    url: website.url,
-    category: website.category,
-    categories: website.categories || [],
-    domainAuthority: website.domainAuthority || 0,
-    monthlyTraffic: website.monthlyTraffic || 0,
-    language: website.language,
-    country: website.country,
-    pricing: {
-      guestPost: website.pricing?.guestPost || 0,
-      linkInsertion: website.pricing?.linkInsertion || 0,
-      writingGuestPost: website.pricing?.writingGuestPost || 0
-    },
-    turnaroundTimeDays: website.turnaroundTimeDays || 7,
-    status: website.status
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-  }
-
-  const handleInputChange = (field: string, value: any) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.')
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof typeof prev] as object || {}),
-          [child]: value
-        }
-      }))
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }))
-    }
-  }
-
-  const categories = [
-    'technology', 'business', 'health', 'finance', 'education', 'lifestyle',
-    'travel', 'food', 'sports', 'entertainment', 'news', 'fashion', 'beauty',
-    'parenting', 'home', 'automotive', 'gaming', 'photography', 'music', 'art', 'other'
-  ]
-
-  const statuses = [
-    { value: 'active', label: 'Active' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'rejected', label: 'Rejected' }
-  ]
-
-  const countries = [
-    { value: 'United States', label: '🇺🇸 United States' },
-    { value: 'United Kingdom', label: '🇬🇧 United Kingdom' },
-    { value: 'Canada', label: '🇨🇦 Canada' },
-    { value: 'Australia', label: '🇦🇺 Australia' },
-    { value: 'Germany', label: '🇩🇪 Germany' },
-    { value: 'France', label: '🇫🇷 France' },
-    { value: 'Spain', label: '🇪🇸 Spain' },
-    { value: 'Italy', label: '🇮🇹 Italy' },
-    { value: 'Netherlands', label: '🇳🇱 Netherlands' },
-    { value: 'Sweden', label: '🇸🇪 Sweden' },
-    { value: 'Norway', label: '🇳🇴 Norway' },
-    { value: 'Denmark', label: '🇩🇰 Denmark' },
-    { value: 'Finland', label: '🇫🇮 Finland' },
-    { value: 'Switzerland', label: '🇨🇭 Switzerland' },
-    { value: 'Austria', label: '🇦🇹 Austria' },
-    { value: 'Belgium', label: '🇧🇪 Belgium' },
-    { value: 'Ireland', label: '🇮🇪 Ireland' },
-    { value: 'New Zealand', label: '🇳🇿 New Zealand' },
-    { value: 'Japan', label: '🇯🇵 Japan' },
-    { value: 'South Korea', label: '🇰🇷 South Korea' },
-    { value: 'Singapore', label: '🇸🇬 Singapore' },
-    { value: 'Hong Kong', label: '🇭🇰 Hong Kong' },
-    { value: 'India', label: '🇮🇳 India' },
-    { value: 'Brazil', label: '🇧🇷 Brazil' },
-    { value: 'Mexico', label: '🇲🇽 Mexico' },
-    { value: 'Argentina', label: '🇦🇷 Argentina' },
-    { value: 'Chile', label: '🇨🇱 Chile' },
-    { value: 'South Africa', label: '🇿🇦 South Africa' },
-    { value: 'Israel', label: '🇮🇱 Israel' },
-    { value: 'United Arab Emirates', label: '🇦🇪 United Arab Emirates' },
-    { value: 'Saudi Arabia', label: '🇸🇦 Saudi Arabia' },
-    { value: 'Turkey', label: '🇹🇷 Turkey' },
-    { value: 'Russia', label: '🇷🇺 Russia' },
-    { value: 'China', label: '🇨🇳 China' },
-    { value: 'Thailand', label: '🇹🇭 Thailand' },
-    { value: 'Malaysia', label: '🇲🇾 Malaysia' },
-    { value: 'Philippines', label: '🇵🇭 Philippines' },
-    { value: 'Indonesia', label: '🇮🇩 Indonesia' },
-    { value: 'Vietnam', label: '🇻🇳 Vietnam' },
-    { value: 'Poland', label: '🇵🇱 Poland' },
-    { value: 'Czech Republic', label: '🇨🇿 Czech Republic' },
-    { value: 'Hungary', label: '🇭🇺 Hungary' },
-    { value: 'Romania', label: '🇷🇴 Romania' },
-    { value: 'Bulgaria', label: '🇧🇬 Bulgaria' },
-    { value: 'Croatia', label: '🇭🇷 Croatia' },
-    { value: 'Slovenia', label: '🇸🇮 Slovenia' },
-    { value: 'Slovakia', label: '🇸🇰 Slovakia' },
-    { value: 'Estonia', label: '🇪🇪 Estonia' },
-    { value: 'Latvia', label: '🇱🇻 Latvia' },
-    { value: 'Lithuania', label: '🇱🇹 Lithuania' },
-    { value: 'Portugal', label: '🇵🇹 Portugal' },
-    { value: 'Greece', label: '🇬🇷 Greece' },
-    { value: 'Cyprus', label: '🇨🇾 Cyprus' },
-    { value: 'Malta', label: '🇲🇹 Malta' },
-    { value: 'Luxembourg', label: '🇱🇺 Luxembourg' },
-    { value: 'Iceland', label: '🇮🇸 Iceland' }
-  ]
-
-  const languages = [
-    { value: 'en', label: '🇺🇸 English' },
-    { value: 'es', label: '🇪🇸 Spanish' },
-    { value: 'fr', label: '🇫🇷 French' },
-    { value: 'de', label: '🇩🇪 German' },
-    { value: 'it', label: '🇮🇹 Italian' },
-    { value: 'pt', label: '🇵🇹 Portuguese' },
-    { value: 'ru', label: '🇷🇺 Russian' },
-    { value: 'zh', label: '🇨🇳 Chinese' },
-    { value: 'ja', label: '🇯🇵 Japanese' },
-    { value: 'ko', label: '🇰🇷 Korean' },
-    { value: 'ar', label: '🇸🇦 Arabic' },
-    { value: 'other', label: '🌍 Other' }
-  ]
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Edit Website
-            </h3>
-            <button
-              onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Website URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Website URL *
-                </label>
-                <input
-                  type="url"
-                  value={formData.url}
-                  onChange={(e) => handleInputChange('url', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Category *
-                </label>
-                <CustomSelect
-                  options={categories.map(cat => ({
-                    value: cat,
-                    label: cat.charAt(0).toUpperCase() + cat.slice(1)
-                  }))}
-                  value={formData.category}
-                  onChange={(value) => handleInputChange('category', value)}
-                  placeholder="Select category"
-                />
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Status *
-                </label>
-                <CustomSelect
-                  options={statuses.map(status => ({
-                    value: status.value,
-                    label: status.label
-                  }))}
-                  value={formData.status}
-                  onChange={(value) => handleInputChange('status', value)}
-                  placeholder="Select status"
-                />
-              </div>
-
-              {/* Domain Authority */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Domain Authority (0-100)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.domainAuthority}
-                  onChange={(e) => handleInputChange('domainAuthority', parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Monthly Traffic */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Monthly Traffic
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.monthlyTraffic}
-                  onChange={(e) => handleInputChange('monthlyTraffic', parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Language */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Language *
-                </label>
-                <CustomSelect
-                  options={languages}
-                  value={formData.language}
-                  onChange={(value) => handleInputChange('language', value)}
-                  placeholder="Select language"
-                />
-              </div>
-
-              {/* Country */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Country *
-                </label>
-                <CustomSelect
-                  options={countries}
-                  value={formData.country}
-                  onChange={(value) => handleInputChange('country', value)}
-                  placeholder="Select country"
-                />
-              </div>
-
-              {/* Guest Post Pricing */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Guest Post Price ($)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.pricing.guestPost}
-                  onChange={(e) => handleInputChange('pricing.guestPost', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Link Insertion Pricing */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Link Insertion Price ($)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.pricing.linkInsertion}
-                  onChange={(e) => handleInputChange('pricing.linkInsertion', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Writing + GP Pricing */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Writing + Guest Post Price ($)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.pricing.writingGuestPost}
-                  onChange={(e) => handleInputChange('pricing.writingGuestPost', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              {/* Turnaround Time (TAT) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Turnaround Time (Days) *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.turnaroundTimeDays}
-                  onChange={(e) => handleInputChange('turnaroundTimeDays', parseInt(e.target.value) || 1)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-600">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  )
-}
