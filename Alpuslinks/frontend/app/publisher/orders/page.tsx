@@ -69,7 +69,7 @@ interface TabData {
 }
 
 export default function PublisherTaskManagementPage() {
-  const [activeTab, setActiveTab] = useState('all')
+  const [activeTab, setActiveTab] = useState('requested')
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -247,7 +247,16 @@ export default function PublisherTaskManagementPage() {
                       onClick={() => setActiveTab(tab.id)}
                       className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                         activeTab === tab.id
-                          ? `border-${tab.color}-500 text-${tab.color}-600 dark:text-${tab.color}-400`
+                          ? (() => {
+                              switch (tab.color) {
+                                case 'blue': return 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                case 'yellow': return 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                                case 'purple': return 'border-purple-500 text-purple-600 dark:text-purple-400'
+                                case 'green': return 'border-green-500 text-green-600 dark:text-green-400'
+                                case 'red': return 'border-red-500 text-red-600 dark:text-red-400'
+                                default: return 'border-gray-500 text-gray-600 dark:text-gray-400'
+                              }
+                            })()
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                       }`}
                     >
@@ -256,7 +265,16 @@ export default function PublisherTaskManagementPage() {
                         <span>{tab.label}</span>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           activeTab === tab.id
-                            ? `bg-${tab.color}-100 text-${tab.color}-800 dark:bg-${tab.color}-900/30 dark:text-${tab.color}-300`
+                            ? (() => {
+                                switch (tab.color) {
+                                  case 'blue': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                  case 'yellow': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                  case 'purple': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                                  case 'green': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                  case 'red': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                  default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                                }
+                              })()
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
                         }`}>
                           {tab.count}
