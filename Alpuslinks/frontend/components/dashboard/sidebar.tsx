@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Globe,
   FileText,
-  Tag
+  Tag,
+  ClipboardList
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
@@ -99,6 +100,11 @@ export function Sidebar() {
         name: 'My Websites',
         icon: BarChart3,
         href: '/publisher/websites'
+      })
+      userChildren.push({
+        name: 'Task Management',
+        icon: ClipboardList,
+        href: '/publisher/orders'
       })
     }
 

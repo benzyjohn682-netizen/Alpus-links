@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
@@ -29,6 +29,24 @@ export function Header() {
   const router = useRouter()
   const cartSummary = useAppSelector(selectCartSummary)
   const currentRole = getRoleName(user?.role).toLowerCase()
+  const profileRef = useRef<HTMLDivElement>(null)
+
+  // Handle click outside to close profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false)
+      }
+    }
+
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProfileOpen])
 
   // Generate breadcrumb from pathname
   const generateBreadcrumb = () => {
@@ -180,7 +198,7 @@ export function Header() {
             </button>
 
             {/* Profile Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -206,6 +224,14 @@ export function Header() {
                   </p>
                 </div>
               </button>
+
+              {/* Overlay */}
+              {isProfileOpen && (
+                <div 
+                  className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+                  onClick={() => setIsProfileOpen(false)}
+                />
+              )}
 
               {/* Dropdown Menu */}
               {isProfileOpen && (
