@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context'
 import { DefaultAvatar } from '@/components/ui/DefaultAvatar'
 import { getRoleNameLowercase } from '@/lib/roleUtils'
+import { useAppSelector, useAppDispatch } from '@/hooks/redux'
+import { toggleCollapsed, toggleSection } from '@/store/slices/sidebarSlice'
 
 type SidebarItem = {
   name: string
@@ -57,8 +59,8 @@ function getHomePathForRole(role?: any) {
 }
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false)
-  const [expandedSections, setExpandedSections] = useState<string[]>([])
+  const dispatch = useAppDispatch()
+  const { collapsed, expandedSections } = useAppSelector((state) => state.sidebar)
   const { user } = useAuth()
   const pathname = usePathname()
   const role = getRoleNameLowercase(user?.role)
@@ -150,12 +152,8 @@ export function Sidebar() {
     return children.some(child => isActive(child.href))
   }
 
-  const toggleSection = (sectionName: string) => {
-    setExpandedSections(prev => 
-      prev.includes(sectionName) 
-        ? prev.filter(name => name !== sectionName)
-        : [...prev, sectionName]
-    )
+  const toggleSectionHandler = (sectionName: string) => {
+    dispatch(toggleSection(sectionName))
   }
 
   return (
@@ -181,7 +179,7 @@ export function Sidebar() {
           )}
           <div className="relative">
             <button
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => dispatch(toggleCollapsed())}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={collapsed ? "Expand" : "Collapse"}
               className="group w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all flex items-center justify-center"
@@ -221,7 +219,7 @@ export function Sidebar() {
                       return (
                         <div key={childIndex}>
                           <button
-                            onClick={() => toggleSection(child.name)}
+                            onClick={() => toggleSectionHandler(child.name)}
                             className={cn(
                               "flex items-center w-full px-3 py-2 rounded-lg transition-colors",
                               "hover:bg-gray-100 dark:hover:bg-gray-700",
@@ -301,7 +299,7 @@ export function Sidebar() {
                             </Link>
                             {!collapsed && (
                               <button
-                                onClick={() => toggleSection(child.name)}
+                                onClick={() => toggleSectionHandler(child.name)}
                                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                               >
                                 {isExpanded ? 

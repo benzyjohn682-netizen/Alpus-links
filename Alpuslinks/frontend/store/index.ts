@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from 'redux-persist'
 import { combineReducers } from '@reduxjs/toolkit'
 import authReducer from './slices/authSlice'
 import cartReducer from './slices/cartSlice'
+import sidebarReducer from './slices/sidebarSlice'
 
 // Create storage that works in both client and server environments
 const createNoopStorage = () => {
@@ -26,7 +27,7 @@ const storage = typeof window !== 'undefined'
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth', 'cart'], // Persist auth and cart state
+  whitelist: ['auth', 'cart', 'sidebar'], // Persist auth, cart, and sidebar state
   blacklist: [], // Don't blacklist anything
   transforms: [], // No transforms needed
   debug: process.env.NODE_ENV === 'development' // Enable debug in development
@@ -35,6 +36,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   auth: authReducer,
   cart: cartReducer,
+  sidebar: sidebarReducer,
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)

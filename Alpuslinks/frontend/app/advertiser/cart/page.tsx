@@ -18,6 +18,7 @@ interface Post {
     link: string
   }>
   status: string
+  postType?: 'regular' | 'link-insertion' | 'writing-gp'
 }
 
 export default function AdvertiserCartPage() {
@@ -33,6 +34,10 @@ export default function AdvertiserCartPage() {
   const [writingGPPosts, setWritingGPPosts] = useState<Post[]>([])
   const [selectedWGPItems, setSelectedWGPItems] = useState<Record<string, string>>({})
   const [loadingWGP, setLoadingWGP] = useState(false)
+
+  const [regularPosts, setRegularPosts] = useState<Post[]>([])
+  const [selectedGPItems, setSelectedGPItems] = useState<Record<string, string>>({})
+  const [loadingGP, setLoadingGP] = useState(false)
 
   // Helper function to extract domain from completeUrl
   const getDomainFromUrl = (url: string): string => {
@@ -55,13 +60,15 @@ export default function AdvertiserCartPage() {
       // Filter for Link Insertion posts using the same logic as post management page
       const liPosts = allPosts.filter((post: Post) => {
         // Check if it's a Link Insertion post (not Writing + GP)
-        const isLinkInsertion = post.title === 'Link Insertion Request' || 
-                               post.title.includes('Link Insertion') ||
-                               (post.anchorPairs && post.anchorPairs.length > 0 && 
-                                !post.title.includes('Writing') && 
-                                !post.title.includes('GP') &&
-                                post.title !== 'Writing + GP' &&
-                                post.title.length > 3) // Exclude short titles that are likely Writing + GP
+        const isLinkInsertion = post.postType === 'link-insertion' || 
+                               (!post.postType && 
+                                (post.title === 'Link Insertion Request' || 
+                                 post.title.includes('Link Insertion') ||
+                                 (post.anchorPairs && post.anchorPairs.length > 0 && 
+                                  !post.title.includes('Writing') && 
+                                  !post.title.includes('GP') &&
+                                  post.title !== 'Writing + GP' &&
+                                  post.title.length > 3))) // Exclude short titles that are likely Writing + GP
         
         return isLinkInsertion
       })
@@ -84,12 +91,14 @@ export default function AdvertiserCartPage() {
       // Filter for Writing + GP posts using the same logic as post management page
       const wgpPosts = allPosts.filter((post: Post) => {
         // Check if it's a Writing + GP post
-        const isWritingGP = post.title === 'Writing + GP' || 
-                           post.title.includes('Writing') || 
-                           post.title.includes('GP') ||
-                           post.title === 'ad' || // Based on your current post
-                           post.title.length <= 3 || // Short titles are likely Writing + GP
-                           (!post.anchorPairs || post.anchorPairs.length === 0) // No anchor pairs suggests Writing + GP
+        const isWritingGP = post.postType === 'writing-gp' || 
+                           (!post.postType && 
+                            (post.title === 'Writing + GP' || 
+                             post.title.includes('Writing') || 
+                             post.title.includes('GP') ||
+                             post.title === 'ad' || // Based on your current post
+                             post.title.length <= 3 || // Short titles are likely Writing + GP
+                             (!post.anchorPairs || post.anchorPairs.length === 0))) // No anchor pairs suggests Writing + GP
         
         return isWritingGP
       })
@@ -99,6 +108,35 @@ export default function AdvertiserCartPage() {
       console.error('Failed to fetch Writing + GP posts:', error)
     } finally {
       setLoadingWGP(false)
+    }
+  }
+
+  // Fetch regular posts (for GP)
+  const fetchRegularPosts = async () => {
+    try {
+      setLoadingGP(true)
+      const response = await apiService.getPosts()
+      const allPosts = response.data?.posts || []
+      
+      // Filter for regular posts (not link insertion or writing+gp)
+      const regularPosts = allPosts.filter((post: Post) => {
+        const isRegular = post.postType === 'regular' || 
+                         (!post.postType && 
+                          post.title !== 'Link Insertion Request' && 
+                          !post.title.includes('Link Insertion') &&
+                          post.title !== 'Writing + GP' && 
+                          !post.title.includes('Writing') && 
+                          !post.title.includes('GP') &&
+                          post.title.length > 3)
+        
+        return isRegular
+      })
+      
+      setRegularPosts(regularPosts)
+    } catch (error: any) {
+      console.error('Failed to fetch regular posts:', error)
+    } finally {
+      setLoadingGP(false)
     }
   }
 
@@ -136,6 +174,27 @@ export default function AdvertiserCartPage() {
     return getWGPForDomain(domain).length > 0
   }
 
+  // Get regular posts for a specific domain
+  const getGPForDomain = (domain: string): Post[] => {
+    return regularPosts.filter(post => {
+      const postDomain = post.domain || getDomainFromUrl(post.completeUrl)
+      return postDomain.toLowerCase() === domain.toLowerCase()
+    })
+  }
+
+  // Check if there are regular posts for a domain
+  const hasGPForDomain = (domain: string): boolean => {
+    return getGPForDomain(domain).length > 0
+  }
+
+  // Handle GP item selection
+  const handleGPSelection = (cartItemId: string, postId: string) => {
+    setSelectedGPItems(prev => ({
+      ...prev,
+      [cartItemId]: postId
+    }))
+  }
+
   // Handle Writing + GP item selection
   const handleWGPSelection = (cartItemId: string, postId: string) => {
     setSelectedWGPItems(prev => ({
@@ -148,6 +207,7 @@ export default function AdvertiserCartPage() {
   useEffect(() => {
     fetchLinkInsertionPosts()
     fetchWritingGPPosts()
+    fetchRegularPosts()
   }, [])
 
   const handleAddService = (websiteId: string, domain: string, type: 'guestPost' | 'linkInsertion' | 'writingGuestPost', price: number) => {
@@ -282,6 +342,43 @@ export default function AdvertiserCartPage() {
                                 </span>
                               </div>
 
+                              {/* Show selected GP item details */}
+                              {item.type === 'guestPost' && selectedGPItems[item.id] && (
+                                <div className="w-full mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                  <div className="flex items-start space-x-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                        Selected Guest Post Item:
+                                      </p>
+                                      {(() => {
+                                        const selectedPost = regularPosts.find(post => post._id === selectedGPItems[item.id])
+                                        return selectedPost ? (
+                                          <div className="mt-1 space-y-1">
+                                            <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                                              {selectedPost.title}
+                                            </p>
+                                            {selectedPost.anchorPairs && selectedPost.anchorPairs.length > 0 && (
+                                              <div className="space-y-1">
+                                                <p className="text-xs text-blue-600 dark:text-blue-400">
+                                                  Anchor Links ({selectedPost.anchorPairs.length}):
+                                                </p>
+                                                {selectedPost.anchorPairs.map((pair, idx) => (
+                                                  <div key={idx} className="text-xs text-blue-600 dark:text-blue-400">
+                                                    <span className="font-medium">"{pair.text}"</span> → 
+                                                    <span className="ml-1 text-blue-600 dark:text-blue-400">{pair.link}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : null
+                                      })()}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Show selected LI item details */}
                               {item.type === 'linkInsertion' && selectedLIItems[item.id] && (
                                 <div className="w-full mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -359,13 +456,32 @@ export default function AdvertiserCartPage() {
                               {/* Show only matching service button */}
                               <div className="flex items-center space-x-2">
                                 {item.type === 'guestPost' && (
-                                  <button
-                                    onClick={() => handleAddGP(item.websiteId, item.domain, item.price)}
-                                    className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                    <span>Add GP</span>
-                                  </button>
+                                  <div className="flex items-center space-x-2">
+                                    {hasGPForDomain(item.domain) ? (
+                                      <div className="flex items-center space-x-2">
+                                        <select
+                                          value={selectedGPItems[item.id] || ''}
+                                          onChange={(e) => handleGPSelection(item.id, e.target.value)}
+                                          className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                        >
+                                          <option value="">Select GP Item</option>
+                                          {getGPForDomain(item.domain).map((post) => (
+                                            <option key={post._id} value={post._id}>
+                                              {post.title} - {post.anchorPairs?.length || 0} anchor(s)
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleAddGP(item.websiteId, item.domain, item.price)}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                        <span>Add GP</span>
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                                 {item.type === 'linkInsertion' && (
                                   <div className="flex items-center space-x-2">

@@ -10,6 +10,7 @@ export interface CartItem {
   type: OrderType
   price: number
   quantity: number
+  selectedPostId?: string // Optional selected post ID
 }
 
 interface CartState {
@@ -29,11 +30,11 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     addItem: (state, action: PayloadAction<Omit<CartItem, 'id' | 'quantity'> & { quantity?: number }>) => {
-      const { websiteId, type, domain, price } = action.payload
+      const { websiteId, type, domain, price, selectedPostId } = action.payload
       const quantity = action.payload.quantity ?? 1
       const id = makeId(websiteId, type)
       // Always create a new independent order
-      state.items.push({ id, websiteId, type, domain, price, quantity })
+      state.items.push({ id, websiteId, type, domain, price, quantity, selectedPostId })
     },
     removeItem: (state, action: PayloadAction<{ id: string }>) => {
       state.items = state.items.filter(i => i.id !== action.payload.id)
