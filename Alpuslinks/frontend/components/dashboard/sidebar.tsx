@@ -171,7 +171,7 @@ export function Sidebar() {
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Sidebar Header */}
-      <div className="kt-sidebar__header p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="kt-sidebar__header px-4 py-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between w-full">
           {!collapsed && (
             <div className="flex items-center space-x-2">
