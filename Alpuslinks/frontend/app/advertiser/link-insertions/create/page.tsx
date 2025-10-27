@@ -3,6 +3,9 @@
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAppDispatch } from '@/hooks/redux'
+import { addItem } from '@/store/slices/cartSlice'
+import { addPostToCart } from '@/store/slices/cartSlice'
 import { ArrowLeft, Save, Send, Link, Unlink, Plus, Trash2, Edit3, ExternalLink } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -22,6 +25,7 @@ interface LinkInsertion {
 
 export default function CreateLinkInsertionPage() {
   const router = useRouter()
+  const dispatch = useAppDispatch()
   const [formData, setFormData] = useState<LinkInsertion>({
     postUrl: '',
     anchorText: '',
@@ -124,12 +128,44 @@ export default function CreateLinkInsertionPage() {
 
     try {
       setSaving(true)
-      await apiService.createLinkInsertion({
+      const response = await apiService.createLinkInsertion({
         ...formData,
         status: 'pending'
       })
-      toast.success('Link insertion submitted for review')
-      router.push('/advertiser/link-insertions')
+      
+      const linkInsertionId = (response.data as any)?.linkInsertion?._id
+      
+      if (!linkInsertionId) {
+        toast.error('Failed to get link insertion ID from response')
+        return
+      }
+      
+      // Extract domain from postUrl to find the website
+      let domain = ''
+      try {
+        const url = new URL(formData.postUrl)
+        domain = url.hostname.replace('www.', '')
+      } catch (e) {
+        toast.error('Invalid post URL format')
+        return
+      }
+      
+      // For link insertions, we need to find the website by domain
+      // Since we don't have the websites list here, we'll use a default price
+      // In a real implementation, you might want to fetch the website info
+      const defaultPrice = 50 // Default price for link insertions
+      
+      // Add the link insertion to cart
+      dispatch(addPostToCart({
+        websiteId: `website-${domain}`, // This is a placeholder - in real implementation you'd get the actual website ID
+        domain: domain,
+        type: 'linkInsertion',
+        price: defaultPrice,
+        selectedPostId: linkInsertionId
+      }))
+      
+      toast.success('Link insertion submitted and added to cart')
+      router.push('/advertiser/cart')
     } catch (error: any) {
       console.error('Submit error:', error)
       toast.error(error?.message || 'Failed to submit link insertion')

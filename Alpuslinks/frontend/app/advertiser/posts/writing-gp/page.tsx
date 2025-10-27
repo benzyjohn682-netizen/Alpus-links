@@ -3,6 +3,9 @@
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useAppDispatch } from '@/hooks/redux'
+import { addItem } from '@/store/slices/cartSlice'
+import { addPostToCart } from '@/store/slices/cartSlice'
 import { ArrowLeft, Save, Send, ChevronDown, Search } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -21,6 +24,7 @@ interface WritingGPForm {
 export default function WritingGPPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const dispatch = useAppDispatch()
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<WritingGPForm>({
     title: '',
@@ -195,9 +199,37 @@ export default function WritingGPPage() {
       }
       
       console.log('Submitting Writing + GP post:', submitData)
-      await apiService.submitPost(submitData)
-      toast.success('Submitted for review')
-      router.push('/advertiser/posts')
+      const response = await apiService.submitPost(submitData)
+      const postId = (response.data as any)?.post?._id
+      
+      if (!postId) {
+        toast.error('Failed to get post ID from response')
+        return
+      }
+      
+      // Find the website by domain to get websiteId and price
+      const website = websites.find(w => {
+        const websiteDomain = w.domain || new URL(w.url).hostname.replace('www.', '')
+        const formDomain = formData.domain.replace(/^https?:\/\//, '').replace('www.', '')
+        return websiteDomain.toLowerCase() === formDomain.toLowerCase()
+      })
+      
+      if (!website) {
+        toast.error('Website not found for the selected domain')
+        return
+      }
+      
+      // Add the post to cart
+      dispatch(addPostToCart({
+        websiteId: website._id,
+        domain: website.domain || new URL(website.url).hostname.replace('www.', ''),
+        type: 'writingGuestPost',
+        price: website.pricing?.writingGuestPost || website.pricing?.guestPost || 0,
+        selectedPostId: postId
+      }))
+      
+      toast.success('Post submitted and added to cart')
+      router.push('/advertiser/cart')
     } catch (e: any) {
       console.error(e)
       toast.error(e?.message || 'Failed to submit')

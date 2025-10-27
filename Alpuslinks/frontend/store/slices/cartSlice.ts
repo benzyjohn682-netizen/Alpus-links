@@ -47,10 +47,28 @@ const cartSlice = createSlice({
     clearCart: (state) => {
       state.items = []
     },
+    addPostToCart: (state, action: PayloadAction<Omit<CartItem, 'id' | 'quantity'> & { quantity?: number }>) => {
+      const { websiteId, type, domain, price, selectedPostId } = action.payload
+      const quantity = action.payload.quantity ?? 1
+      
+      // Check if there's already a cart item for this website and type
+      const existingItem = state.items.find(item => 
+        item.websiteId === websiteId && item.type === type
+      )
+      
+      if (existingItem) {
+        // Update existing item with the selectedPostId
+        existingItem.selectedPostId = selectedPostId
+      } else {
+        // Create new item only if none exists
+        const id = makeId(websiteId, type)
+        state.items.push({ id, websiteId, type, domain, price, quantity, selectedPostId })
+      }
+    },
   },
 })
 
-export const { addItem, removeItem, updateQuantity, clearCart } = cartSlice.actions
+export const { addItem, removeItem, updateQuantity, clearCart, addPostToCart } = cartSlice.actions
 
 export default cartSlice.reducer
 

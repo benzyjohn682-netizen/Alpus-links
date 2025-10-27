@@ -3,6 +3,9 @@
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useAppDispatch } from '@/hooks/redux'
+import { addItem } from '@/store/slices/cartSlice'
+import { addPostToCart } from '@/store/slices/cartSlice'
 import { ArrowLeft, Save, Send, Link, Unlink, Image, Table, Minus, Play, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote, Bold, Italic, Strikethrough, Subscript, Superscript, Maximize2, Type, Palette, RotateCcw, RotateCw, HelpCircle, MoreHorizontal, Code, Eye, Plus } from 'lucide-react'
 import CodeEditor from '@/components/editor/CodeEditor'
 import RichTextEditor from '@/components/editor/RichTextEditor'
@@ -20,6 +23,7 @@ export default function EditPostPage() {
   const router = useRouter()
   const params = useParams()
   const postId = (params?.id as string) || ''
+  const dispatch = useAppDispatch()
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -361,9 +365,37 @@ export default function EditPostPage() {
       console.log('Title being sent:', formData.title)
       console.log('Content being sent:', formData.content)
       
-      await apiService.submitPost(payload)
-      toast.success('Post submitted for moderation')
-      router.push('/advertiser/posts')
+      const response = await apiService.submitPost(payload)
+      const newPostId = (response.data as any)?.post?._id
+      
+      if (!newPostId) {
+        toast.error('Failed to get post ID from response')
+        return
+      }
+      
+      // Find the website by domain to get websiteId and price
+      const website = websites.find(w => {
+        const websiteDomain = w.domain || new URL(w.url).hostname.replace('www.', '')
+        const formDomain = formData.domain.replace(/^https?:\/\//, '').replace('www.', '')
+        return websiteDomain.toLowerCase() === formDomain.toLowerCase()
+      })
+      
+      if (!website) {
+        toast.error('Website not found for the selected domain')
+        return
+      }
+      
+      // Add the post to cart
+      dispatch(addPostToCart({
+        websiteId: website._id,
+        domain: website.domain || new URL(website.url).hostname.replace('www.', ''),
+        type: 'guestPost',
+        price: website.pricing?.guestPost || 0,
+        selectedPostId: newPostId
+      }))
+      
+      toast.success('Post submitted and added to cart')
+      router.push('/advertiser/cart')
     } catch (e: any) {
       console.error('Post submission error:', e)
       console.error('Error details:', e.response?.data || e.message)
