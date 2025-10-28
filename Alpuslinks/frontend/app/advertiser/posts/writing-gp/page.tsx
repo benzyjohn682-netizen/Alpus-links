@@ -156,7 +156,14 @@ export default function WritingGPPage() {
   }
 
   const saveDraft = async () => {
+    // Check requirements field first
+    if (!formData.content.trim()) {
+      toast.error('Requirements input is required')
+      return
+    }
+    
     if (!validate()) return toast.error('Please fix errors')
+    
     try {
       setSaving(true)
       const isFromCart = searchParams.get('from') === 'cart'
@@ -182,7 +189,14 @@ export default function WritingGPPage() {
   }
 
   const submit = async () => {
+    // Check requirements field first
+    if (!formData.content.trim()) {
+      toast.error('Requirements input is required')
+      return
+    }
+    
     if (!validate()) return toast.error('Please fix errors')
+    
     try {
       setSaving(true)
       const isFromCart = searchParams.get('from') === 'cart'
@@ -195,7 +209,8 @@ export default function WritingGPPage() {
         metaDescription: isFromCart ? 'cart-created' : formData.metaDescription,
         keywords: isFromCart ? 'cart-created' : formData.keywords,
         anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
-        postType: 'writing-gp'
+        postType: 'writing-gp',
+        status: 'pending'
       }
       
       console.log('Submitting Writing + GP post:', submitData)

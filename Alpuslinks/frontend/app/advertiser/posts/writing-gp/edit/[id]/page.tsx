@@ -187,7 +187,14 @@ export default function EditWritingGPPage() {
   }
 
   const saveDraft = async () => {
+    // Check requirements field first
+    if (!formData.content.trim()) {
+      toast.error('Requirements input is required')
+      return
+    }
+    
     if (!validate()) return toast.error('Please fix errors')
+    
     try {
       setSaving(true)
       
@@ -227,7 +234,14 @@ export default function EditWritingGPPage() {
   }
 
   const submit = async () => {
+    // Check requirements field first
+    if (!formData.content.trim()) {
+      toast.error('Requirements input is required')
+      return
+    }
+    
     if (!validate()) return toast.error('Please fix errors')
+    
     try {
       setSaving(true)
       
