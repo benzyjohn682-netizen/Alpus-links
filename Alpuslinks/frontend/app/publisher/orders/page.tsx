@@ -235,54 +235,109 @@ export default function PublisherTaskManagementPage() {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+          {/* Responsive Tabs */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden">
             <div className="border-b border-gray-200 dark:border-gray-700">
-              <nav className="flex space-x-8 px-6" aria-label="Tabs">
-                {tabCounts.map((tab) => {
-                  const Icon = tab.icon
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                        activeTab === tab.id
-                          ? (() => {
-                              switch (tab.color) {
-                                case 'blue': return 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                case 'yellow': return 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
-                                case 'purple': return 'border-purple-500 text-purple-600 dark:text-purple-400'
-                                case 'green': return 'border-green-500 text-green-600 dark:text-green-400'
-                                case 'red': return 'border-red-500 text-red-600 dark:text-red-400'
-                                default: return 'border-gray-500 text-gray-600 dark:text-gray-400'
-                              }
-                            })()
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Icon className="w-4 h-4" />
-                        <span>{tab.label}</span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              {/* Desktop Layout with Scrollable Tabs */}
+              <nav className="hidden md:block" aria-label="Tabs">
+                <div className="overflow-x-auto px-6">
+                  <div className="flex min-w-max">
+                    {tabCounts.map((tab) => {
+                      const Icon = tab.icon
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`py-4 px-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                            activeTab === tab.id
+                              ? (() => {
+                                  switch (tab.color) {
+                                    case 'blue': return 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                    case 'yellow': return 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                                    case 'purple': return 'border-purple-500 text-purple-600 dark:text-purple-400'
+                                    case 'green': return 'border-green-500 text-green-600 dark:text-green-400'
+                                    case 'red': return 'border-red-500 text-red-600 dark:text-red-400'
+                                    default: return 'border-gray-500 text-gray-600 dark:text-gray-400'
+                                  }
+                                })()
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Icon className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-sm">{tab.label}</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              activeTab === tab.id
+                                ? (() => {
+                                    switch (tab.color) {
+                                      case 'blue': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                      case 'yellow': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                      case 'purple': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                                      case 'green': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                      case 'red': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                                    }
+                                  })()
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                            }`}>
+                              {tab.count}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </nav>
+
+              {/* Mobile Layout */}
+              <nav className="md:hidden px-4 py-2" aria-label="Tabs">
+                <div className="grid grid-cols-2 gap-2">
+                  {tabCounts.map((tab) => {
+                    const Icon = tab.icon
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`py-3 px-3 rounded-lg font-medium text-sm transition-colors ${
                           activeTab === tab.id
                             ? (() => {
                                 switch (tab.color) {
-                                  case 'blue': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                                  case 'yellow': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                  case 'purple': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-                                  case 'green': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                  case 'red': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                  default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                                  case 'blue': return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                  case 'yellow': return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800'
+                                  case 'purple': return 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800'
+                                  case 'green': return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800'
+                                  case 'red': return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800'
+                                  default: return 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400 border border-gray-200 dark:border-gray-800'
                                 }
                               })()
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-                        }`}>
-                          {tab.count}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
+                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <Icon className="w-4 h-4" />
+                          <span className="truncate text-xs">{tab.label}</span>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                            activeTab === tab.id
+                              ? (() => {
+                                  switch (tab.color) {
+                                    case 'blue': return 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'
+                                    case 'yellow': return 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'
+                                    case 'purple': return 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200'
+                                    case 'green': return 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
+                                    case 'red': return 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200'
+                                    default: return 'bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                  }
+                                })()
+                              : 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
+                          }`}>
+                            {tab.count}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
               </nav>
             </div>
           </div>
