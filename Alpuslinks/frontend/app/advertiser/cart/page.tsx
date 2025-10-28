@@ -60,6 +60,9 @@ export default function AdvertiserCartPage() {
       
       // Filter for Link Insertion posts using the same logic as post management page
       const liPosts = allPosts.filter((post: Post) => {
+        // Exclude draft posts
+        if (post.status === 'draft') return false
+        
         // Check if it's a Link Insertion post (not Writing + GP)
         const isLinkInsertion = post.postType === 'link-insertion' || 
                                (!post.postType && 
@@ -91,6 +94,9 @@ export default function AdvertiserCartPage() {
       
       // Filter for Writing + GP posts using the same logic as post management page
       const wgpPosts = allPosts.filter((post: Post) => {
+        // Exclude draft posts
+        if (post.status === 'draft') return false
+        
         // Check if it's a Writing + GP post
         const isWritingGP = post.postType === 'writing-gp' || 
                            (!post.postType && 
@@ -121,6 +127,9 @@ export default function AdvertiserCartPage() {
       
       // Filter for regular posts (not link insertion or writing+gp)
       const regularPosts = allPosts.filter((post: Post) => {
+        // Exclude draft posts
+        if (post.status === 'draft') return false
+        
         const isRegular = post.postType === 'regular' || 
                          (!post.postType && 
                           post.title !== 'Link Insertion Request' && 

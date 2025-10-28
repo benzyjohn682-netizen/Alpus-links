@@ -1,11 +1,13 @@
 "use client"
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Send } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useAppDispatch } from '@/hooks/redux'
+import { addPostToCart } from '@/store/slices/cartSlice'
 
 interface LinkInsertionAsPost {
   title: string
@@ -19,7 +21,9 @@ interface LinkInsertionAsPost {
 
 export default function CreateLinkInsertionAsPostPage() {
   const router = useRouter()
+  const dispatch = useAppDispatch()
   const [saving, setSaving] = useState(false)
+  const [websites, setWebsites] = useState<any[]>([])
   const [formData, setFormData] = useState<LinkInsertionAsPost>({
     title: '',
     completeUrl: '',
@@ -33,6 +37,49 @@ export default function CreateLinkInsertionAsPostPage() {
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Fetch websites for domain validation
+  const fetchWebsites = async () => {
+    try {
+      const response = await apiService.getAdvertiserWebsites({
+        page: 1,
+        limit: 100
+      })
+      
+      if ((response.data as any)?.websites) {
+        setWebsites((response.data as any).websites)
+      }
+    } catch (error) {
+      console.error('Error fetching websites:', error)
+      toast.error('Failed to load websites')
+    }
+  }
+
+  // Check if entered domain exists in available websites list
+  const isDomainAvailable = (): boolean => {
+    if (!formData.completeUrl.trim()) return false
+    
+    try {
+      const url = new URL(formatUrl(formData.completeUrl))
+      const domain = url.hostname.replace(/^www\./, '').toLowerCase()
+      
+      return websites.some(w => {
+        try {
+          const websiteDomain = (w.domain || new URL(w.url).hostname).replace(/^www\./, '').toLowerCase()
+          return websiteDomain === domain
+        } catch {
+          return false
+        }
+      })
+    } catch {
+      return false
+    }
+  }
+
+  // Fetch websites on component mount
+  useEffect(() => {
+    fetchWebsites()
+  }, [])
 
   const isValidUrl = (url: string) => {
     try { new URL(url); return true } catch { return false }
@@ -100,6 +147,12 @@ export default function CreateLinkInsertionAsPostPage() {
       console.log('Validation failed, errors:', errors)
       return toast.error('Please fix errors')
     }
+    
+    // Ensure domain exists in available websites
+    if (!isDomainAvailable()) {
+      return toast.error('Selected domain is not available. Please choose a domain from the available websites.')
+    }
+    
     try {
       setSaving(true)
       const draftData = {
@@ -110,7 +163,8 @@ export default function CreateLinkInsertionAsPostPage() {
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
-        postType: 'link-insertion'
+        postType: 'link-insertion',
+        status: 'draft'
       }
       console.log('Saving draft with data:', draftData)
       await apiService.savePostDraft(draftData)
@@ -129,6 +183,12 @@ export default function CreateLinkInsertionAsPostPage() {
       console.log('Validation failed, errors:', errors)
       return toast.error('Please fix errors')
     }
+    
+    // Ensure domain exists in available websites
+    if (!isDomainAvailable()) {
+      return toast.error('Selected domain is not available. Please choose a domain from the available websites.')
+    }
+    
     try {
       setSaving(true)
       const submitData = {
@@ -139,13 +199,47 @@ export default function CreateLinkInsertionAsPostPage() {
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
-        postType: 'link-insertion'
+        postType: 'link-insertion',
+        status: 'pending'
       }
       
       console.log('Submitting Link Insertion post:', submitData)
-      await apiService.submitPost(submitData)
-      toast.success('Submitted for review')
-      router.push('/advertiser/posts')
+      const response = await apiService.submitPost(submitData)
+      const postId = (response.data as any)?.post?._id
+      
+      if (!postId) {
+        toast.error('Failed to get post ID from response')
+        return
+      }
+      
+      // Find the website by domain to get websiteId and price
+      const website = websites.find(w => {
+        try {
+          const url = new URL(formatUrl(formData.completeUrl))
+          const domain = url.hostname.replace(/^www\./, '').toLowerCase()
+          const websiteDomain = (w.domain || new URL(w.url).hostname).replace(/^www\./, '').toLowerCase()
+          return websiteDomain === domain
+        } catch {
+          return false
+        }
+      })
+      
+      if (!website) {
+        toast.error('Website not found for the selected domain')
+        return
+      }
+      
+      // Add the post to cart
+      dispatch(addPostToCart({
+        websiteId: website._id,
+        domain: website.domain || new URL(website.url).hostname.replace('www.', ''),
+        type: 'linkInsertion',
+        price: website.pricing?.linkInsertion || 0,
+        selectedPostId: postId
+      }))
+      
+      toast.success('Link insertion submitted and added to cart')
+      router.push('/advertiser/cart')
     } catch (e: any) {
       console.error('Submit error:', e)
       toast.error(e?.message || 'Failed to submit')

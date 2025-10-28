@@ -419,19 +419,38 @@ export default function PostManagementPage() {
                           )}
 
                           {/* Anchor Pairs */}
-                          {post.anchorPairs && post.anchorPairs.length > 0 && (
-                            <div className="mb-4">
-                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Anchor Links:</p>
-                              <div className="space-y-1">
-                                {post.anchorPairs.map((pair, index) => (
-                                  <div key={index} className="text-sm text-gray-600 dark:text-gray-400">
-                                    <span className="font-medium">"{pair.text}"</span> → 
-                                    <span className="ml-1 text-blue-600 dark:text-blue-400">{pair.link}</span>
-                                  </div>
-                                ))}
+                          {post.anchorPairs && post.anchorPairs.length > 0 && (() => {
+                            // Filter out invalid or duplicate anchor pairs
+                            const validAnchorPairs = post.anchorPairs.filter((pair, index, self) => {
+                              // Remove empty pairs
+                              if (!pair.text?.trim() || !pair.link?.trim()) return false
+                              
+                              // Remove pairs with invalid URLs
+                              if (!pair.link.startsWith('http')) return false
+                              
+                              // Remove duplicates based on text and link
+                              const isDuplicate = self.findIndex(p => 
+                                p.text?.trim() === pair.text?.trim() && 
+                                p.link?.trim() === pair.link?.trim()
+                              ) !== index
+                              
+                              return !isDuplicate
+                            })
+                            
+                            return validAnchorPairs.length > 0 ? (
+                              <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Anchor Links:</p>
+                                <div className="space-y-1">
+                                  {validAnchorPairs.map((pair, index) => (
+                                    <div key={index} className="text-sm text-gray-600 dark:text-gray-400">
+                                      <span className="font-medium">"{pair.text}"</span> → 
+                                      <span className="ml-1 text-blue-600 dark:text-blue-400">{pair.link}</span>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            ) : null
+                          })()}
                         </div>
                       </div>
 

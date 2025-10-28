@@ -6,6 +6,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Send } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useAppDispatch } from '@/hooks/redux'
+import { addPostToCart } from '@/store/slices/cartSlice'
 
 interface LinkInsertionAsPost {
   title: string
@@ -21,9 +23,11 @@ export default function EditLinkInsertionAsPostPage() {
   const router = useRouter()
   const params = useParams()
   const postId = (params?.id as string) || ''
+  const dispatch = useAppDispatch()
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [websites, setWebsites] = useState<any[]>([])
   const [formData, setFormData] = useState<LinkInsertionAsPost>({
     title: '',
     completeUrl: '',
@@ -36,6 +40,23 @@ export default function EditLinkInsertionAsPostPage() {
     ],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Fetch websites for domain validation
+  const fetchWebsites = async () => {
+    try {
+      const response = await apiService.getAdvertiserWebsites({
+        page: 1,
+        limit: 100
+      })
+      
+      if ((response.data as any)?.websites) {
+        setWebsites((response.data as any).websites)
+      }
+    } catch (error) {
+      console.error('Error fetching websites:', error)
+      toast.error('Failed to load websites')
+    }
+  }
 
   // Load post data
   useEffect(() => {
@@ -72,6 +93,7 @@ export default function EditLinkInsertionAsPostPage() {
     }
     
     loadPost()
+    fetchWebsites()
   }, [postId, router])
 
   const isValidUrl = (url: string) => {
@@ -138,7 +160,8 @@ export default function EditLinkInsertionAsPostPage() {
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs,
-        postType: 'link-insertion'
+        postType: 'link-insertion',
+        status: 'draft'
       })
       toast.success('Draft updated')
       router.push('/advertiser/posts')
@@ -162,13 +185,41 @@ export default function EditLinkInsertionAsPostPage() {
         metaDescription: formData.metaDescription || '',
         keywords: formData.keywords || '',
         anchorPairs: formData.anchorPairs,
-        postType: 'link-insertion'
+        postType: 'link-insertion',
+        status: 'pending'
       }
       
       console.log('Updating Link Insertion post:', submitData)
       await apiService.updatePost(postId, submitData)
-      toast.success('Updated and submitted for review')
-      router.push('/advertiser/posts')
+      
+      // Find the website by domain to get websiteId and price
+      const website = websites.find(w => {
+        try {
+          const url = new URL(formatUrl(formData.completeUrl))
+          const domain = url.hostname.replace(/^www\./, '').toLowerCase()
+          const websiteDomain = (w.domain || new URL(w.url).hostname).replace(/^www\./, '').toLowerCase()
+          return websiteDomain === domain
+        } catch {
+          return false
+        }
+      })
+      
+      if (!website) {
+        toast.error('Website not found for the selected domain')
+        return
+      }
+      
+      // Add the post to cart
+      dispatch(addPostToCart({
+        websiteId: website._id,
+        domain: website.domain || new URL(website.url).hostname.replace('www.', ''),
+        type: 'linkInsertion',
+        price: website.pricing?.linkInsertion || 0,
+        selectedPostId: postId
+      }))
+      
+      toast.success('Link insertion updated and added to cart')
+      router.push('/advertiser/cart')
     } catch (e: any) {
       console.error(e)
       toast.error(e?.message || 'Failed to submit')

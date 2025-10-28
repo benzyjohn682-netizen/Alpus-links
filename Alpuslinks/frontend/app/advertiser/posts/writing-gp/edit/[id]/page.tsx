@@ -6,6 +6,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Save, Send, ChevronDown, Search } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useAppDispatch } from '@/hooks/redux'
+import { addPostToCart } from '@/store/slices/cartSlice'
 
 interface WritingGPForm {
   title: string
@@ -22,6 +24,7 @@ export default function EditWritingGPPage() {
   const router = useRouter()
   const params = useParams()
   const postId = (params?.id as string) || ''
+  const dispatch = useAppDispatch()
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -256,8 +259,30 @@ export default function EditWritingGPPage() {
       
       console.log('Updating Writing + GP post:', submitData)
       await apiService.updatePost(postId, submitData)
-      toast.success('Updated and submitted for review')
-      router.push('/advertiser/posts')
+      
+      // Find the website by domain to get websiteId and price
+      const website = websites.find(w => {
+        const websiteDomain = w.domain || new URL(w.url).hostname.replace('www.', '')
+        const formDomain = formData.domain.replace(/^https?:\/\//, '').replace('www.', '')
+        return websiteDomain.toLowerCase() === formDomain.toLowerCase()
+      })
+      
+      if (!website) {
+        toast.error('Website not found for the selected domain')
+        return
+      }
+      
+      // Add the post to cart
+      dispatch(addPostToCart({
+        websiteId: website._id,
+        domain: website.domain || new URL(website.url).hostname.replace('www.', ''),
+        type: 'writingGuestPost',
+        price: website.pricing?.writingGuestPost || website.pricing?.guestPost || 0,
+        selectedPostId: postId
+      }))
+      
+      toast.success('Writing + GP updated and added to cart')
+      router.push('/advertiser/cart')
     } catch (e: any) {
       console.error(e)
       toast.error(e?.message || 'Failed to submit')

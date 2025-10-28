@@ -243,7 +243,10 @@ export default function CreatePostPage() {
       }
       console.log('Saving draft with payload:', payload)
       await apiService.savePostDraft(payload)
-      toast.success('Draft saved')
+      toast.success('Draft saved successfully')
+      
+      // Navigate to post management page after successful save
+      router.push('/advertiser/posts')
     } catch (e: any) {
       console.error('Draft save error:', e)
       toast.error(e?.message || 'Failed to save draft')

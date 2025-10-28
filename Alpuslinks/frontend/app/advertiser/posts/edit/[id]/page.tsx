@@ -251,6 +251,17 @@ export default function EditPostPage() {
     if (field === 'content') {
       const extracted = extractAnchorPairsFromContent(value)
       setExtractedAnchorPairs(extracted)
+      
+      // Also update anchorPairs to remove any pairs that are no longer in the content
+      // This ensures consistency between manually added pairs and extracted pairs
+      setAnchorPairs(prev => {
+        return prev.filter(pair => {
+          // Keep pairs that are still in the extracted content
+          return extracted.some(extractedPair => 
+            extractedPair.text === pair.text && extractedPair.link === pair.link
+          )
+        })
+      })
     }
   }
 
@@ -301,8 +312,9 @@ export default function EditPostPage() {
         ? `${formData.domain}/${formData.slug}`
         : formData.domain || formData.slug || ''
       
-      // Filter out empty anchor pairs and ensure no duplicates
-      const allAnchorPairs = [...anchorPairs, ...extractedAnchorPairs]
+      // Use only extracted anchor pairs from content as the source of truth
+      // This ensures that removed links are properly reflected in the update
+      const validAnchorPairs = extractedAnchorPairs
         .filter(pair => pair.text.trim() && pair.link.trim())
         .map(pair => ({
           text: pair.text.trim(),
@@ -310,7 +322,7 @@ export default function EditPostPage() {
         }))
       
       // Remove duplicates based on text and link combination
-      const uniqueAnchorPairs = allAnchorPairs.filter((pair, index, self) => 
+      const uniqueAnchorPairs = validAnchorPairs.filter((pair, index, self) => 
         index === self.findIndex(p => p.text === pair.text && p.link === pair.link)
       )
       
@@ -363,8 +375,9 @@ export default function EditPostPage() {
         return
       }
       
-      // Filter out empty anchor pairs and ensure no duplicates
-      const allAnchorPairs = [...anchorPairs, ...extractedAnchorPairs]
+      // Use only extracted anchor pairs from content as the source of truth
+      // This ensures that removed links are properly reflected in the update
+      const validAnchorPairs = extractedAnchorPairs
         .filter(pair => pair.text.trim() && pair.link.trim())
         .map(pair => ({
           text: pair.text.trim(),
@@ -372,7 +385,7 @@ export default function EditPostPage() {
         }))
       
       // Remove duplicates based on text and link combination
-      const uniqueAnchorPairs = allAnchorPairs.filter((pair, index, self) => 
+      const uniqueAnchorPairs = validAnchorPairs.filter((pair, index, self) => 
         index === self.findIndex(p => p.text === pair.text && p.link === pair.link)
       )
       
@@ -395,8 +408,29 @@ export default function EditPostPage() {
       
       const response = await apiService.updatePost(postId, payload)
       
-      toast.success('Post updated and submitted for review')
-      router.push('/advertiser/posts')
+      // Find the website by domain to get websiteId and price
+      const website = websites.find(w => {
+        const websiteDomain = w.domain || new URL(w.url).hostname.replace('www.', '')
+        const formDomain = formData.domain.replace(/^https?:\/\//, '').replace('www.', '')
+        return websiteDomain.toLowerCase() === formDomain.toLowerCase()
+      })
+      
+      if (!website) {
+        toast.error('Website not found for the selected domain')
+        return
+      }
+      
+      // Add the post to cart
+      dispatch(addPostToCart({
+        websiteId: website._id,
+        domain: website.domain || new URL(website.url).hostname.replace('www.', ''),
+        type: 'guestPost',
+        price: website.pricing?.guestPost || 0,
+        selectedPostId: postId
+      }))
+      
+      toast.success('Post updated and added to cart')
+      router.push('/advertiser/cart')
     } catch (e: any) {
       console.error('Post update error:', e)
       console.error('Error details:', e.response?.data || e.message)
