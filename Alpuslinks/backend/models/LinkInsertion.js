@@ -50,7 +50,7 @@ const linkInsertionSchema = new mongoose.Schema({
   // Status tracking
   status: {
     type: String,
-    enum: ['draft', 'pending', 'approved', 'rejected'],
+    enum: ['draft', 'pending', 'inProgress', 'approved', 'rejected'],
     default: 'draft'
   },
   

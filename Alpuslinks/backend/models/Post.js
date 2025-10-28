@@ -56,7 +56,7 @@ const postSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['draft', 'pending', 'approved', 'rejected'],
+    enum: ['draft', 'pending', 'inProgress', 'approved', 'rejected'],
     default: 'draft',
     index: true
   },

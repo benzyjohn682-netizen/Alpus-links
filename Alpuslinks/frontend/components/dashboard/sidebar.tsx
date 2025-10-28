@@ -123,6 +123,11 @@ export function Sidebar() {
         icon: FileText,
         href: '/advertiser/posts'
       })
+      userChildren.push({
+        name: 'My Orders',
+        icon: ClipboardList,
+        href: '/advertiser/orders'
+      })
     }
 
     // Management options: only super admin/admin

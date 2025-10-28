@@ -797,6 +797,59 @@ class ApiService {
   async getCategories() {
     return this.get('/categories/all?isActive=true')
   }
+
+  // Order methods
+  async placeOrder(items: Array<{
+    websiteId: string
+    type: 'guestPost' | 'linkInsertion' | 'writingGuestPost'
+    price: number
+    selectedPostId?: string
+  }>) {
+    return this.post('/orders', { items })
+  }
+
+  async getPublisherOrders(filters: {
+    status?: string
+    page?: number
+    limit?: number
+    search?: string
+  } = {}) {
+    const params = new URLSearchParams()
+    if (filters.status) params.append('status', filters.status)
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    
+    return this.request(`/orders/publisher?${params.toString()}`)
+  }
+
+  async getAdvertiserOrders(filters: {
+    status?: string
+    page?: number
+    limit?: number
+  } = {}) {
+    const params = new URLSearchParams()
+    if (filters.status) params.append('status', filters.status)
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    
+    return this.request(`/orders/advertiser?${params.toString()}`)
+  }
+
+  async updateOrderStatus(orderId: string, status: string, note?: string, rejectionReason?: string) {
+    return this.request(`/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, note, rejectionReason })
+    })
+  }
+
+  async getOrder(orderId: string) {
+    return this.request(`/orders/${orderId}`)
+  }
+
+  async getOrderStats(userId: string) {
+    return this.request(`/orders/stats/${userId}`)
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL)

@@ -314,7 +314,7 @@ export default function AdvertiserCartPage() {
   }
 
   // Handle order button click
-  const handleOrderClick = () => {
+  const handleOrderClick = async () => {
     if (!areAllItemsSelected()) {
       toast.error('Please select a product for each item in your cart before placing an order.', {
         duration: 5000,
@@ -322,8 +322,33 @@ export default function AdvertiserCartPage() {
       return
     }
     
-    // TODO: Implement actual order placement logic
-    toast.success('Order placed successfully!')
+    try {
+      // Prepare order items with selected posts
+      const orderItems = items.map(item => ({
+        websiteId: item.websiteId,
+        type: item.type,
+        price: item.price,
+        selectedPostId: item.selectedPostId
+      }))
+
+      // Call API to place order
+      const response = await apiService.post('/orders', { items: orderItems })
+      
+      if ((response.data as any)?.success) {
+        toast.success('Order placed successfully! Your items are now in progress.')
+        
+        // Clear the cart after successful order
+        dispatch(clearCart())
+        
+        // Redirect to orders page
+        router.push('/advertiser/orders')
+      } else {
+        throw new Error((response.data as any)?.message || 'Failed to place order')
+      }
+    } catch (error) {
+      console.error('Error placing order:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to place order. Please try again.')
+    }
   }
 
   // Fetch posts on component mount

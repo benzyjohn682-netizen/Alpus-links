@@ -101,6 +101,7 @@ app.use('/api/posts', require('./routes/posts'));
 app.use('/api/link-insertions', require('./routes/linkInsertions'));
 app.use('/api/domain-verification', require('./routes/domainVerification'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/orders', require('./routes/orders'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

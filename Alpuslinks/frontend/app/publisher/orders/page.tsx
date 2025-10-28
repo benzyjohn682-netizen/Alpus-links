@@ -92,18 +92,54 @@ export default function PublisherTaskManagementPage() {
       setLoading(true)
       setError(null)
       
-      // TODO: Replace with actual API call when backend is ready
-      // const response = await apiService.getPublisherTasks()
-      // setTasks(response.data?.tasks || [])
+      const response = await apiService.getPublisherOrders({
+        status: activeTab === 'all' ? undefined : activeTab,
+        search: searchTerm
+      })
       
-      // For now, set empty array - no mock data
-      setTasks([])
+      if (response.data?.success) {
+        setTasks(response.data.data.orders || [])
+      } else {
+        throw new Error(response.data?.message || 'Failed to fetch orders')
+      }
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch tasks')
     } finally {
       setLoading(false)
     }
+  }
+
+  // Handle order status update
+  const handleOrderStatusUpdate = async (orderId: string, newStatus: string, note?: string, rejectionReason?: string) => {
+    try {
+      const response = await apiService.updateOrderStatus(orderId, newStatus, note, rejectionReason)
+      
+      if (response.data?.success) {
+        toast.success(`Order ${newStatus === 'inProgress' ? 'accepted' : newStatus === 'rejected' ? 'rejected' : 'updated'} successfully`)
+        // Refresh the tasks list
+        fetchTasks()
+      } else {
+        throw new Error(response.data?.message || 'Failed to update order status')
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update order status')
+    }
+  }
+
+  // Handle accept order
+  const handleAcceptOrder = (orderId: string) => {
+    handleOrderStatusUpdate(orderId, 'inProgress', 'Order accepted and work started')
+  }
+
+  // Handle reject order
+  const handleRejectOrder = (orderId: string, rejectionReason: string) => {
+    if (!rejectionReason.trim()) {
+      toast.error('Please provide a reason for rejection')
+      return
+    }
+    handleOrderStatusUpdate(orderId, 'rejected', 'Order rejected', rejectionReason)
   }
 
   // Update tab counts
@@ -166,23 +202,29 @@ export default function PublisherTaskManagementPage() {
   // Handle task actions
   const handleTaskAction = async (taskId: string, action: string) => {
     try {
-      // TODO: Replace with actual API calls when backend is ready
-      // await apiService.updateTaskStatus(taskId, action)
-      
-      console.log(`Performing ${action} on task ${taskId}`)
-      toast.success(`Task ${action} successfully`)
-      
-      // Refresh tasks after action
-      await fetchTasks()
-    } catch (err) {
-      console.error(`Error ${action} task:`, err)
+      if (action === 'accept') {
+        handleAcceptOrder(taskId)
+      } else if (action === 'reject') {
+        // For reject, we'll show a modal or prompt for rejection reason
+        const reason = prompt('Please provide a reason for rejection:')
+        if (reason) {
+          handleRejectOrder(taskId, reason)
+        }
+      } else {
+        console.log(`Performing ${action} on task ${taskId}`)
+        toast.success(`Task ${action} successfully`)
+        fetchTasks()
+      }
+    } catch (error) {
+      console.error(`Error ${action} task:`, error)
       toast.error(`Failed to ${action} task`)
     }
   }
 
+  // Fetch tasks on component mount and when dependencies change
   useEffect(() => {
     fetchTasks()
-  }, [])
+  }, [activeTab, searchTerm])
 
   const tabCounts = updateTabCounts()
 
@@ -493,6 +535,40 @@ export default function PublisherTaskManagementPage() {
 
                       {/* Actions */}
                       <div className="ml-6 flex items-center space-x-2">
+                        {task.status === 'requested' && (
+                          <>
+                            <button
+                              onClick={() => handleAcceptOrder(task._id)}
+                              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Accept</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                const reason = prompt('Please provide a reason for rejection:')
+                                if (reason) {
+                                  handleRejectOrder(task._id, reason)
+                                }
+                              }}
+                              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>Reject</span>
+                            </button>
+                          </>
+                        )}
+                        
+                        {task.status === 'inProgress' && (
+                          <button
+                            onClick={() => handleOrderStatusUpdate(task._id, 'advertiserApproval', 'Work completed, awaiting advertiser approval')}
+                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Submit for Approval</span>
+                          </button>
+                        )}
+                        
                         <button
                           onClick={() => {/* View task details */}}
                           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
@@ -500,13 +576,7 @@ export default function PublisherTaskManagementPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => {/* Edit task */}}
-                          className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                          title="Edit Task"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        
                         <div className="relative">
                           <button
                             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
