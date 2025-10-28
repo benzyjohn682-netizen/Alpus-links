@@ -3,6 +3,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ReduxProvider } from '@/providers/ReduxProvider'
 import { AuthProvider } from '@/contexts/auth-context'
+import { PendingCountProvider } from '@/contexts/pending-count-context'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
@@ -26,20 +27,22 @@ export default function RootLayout({
         >
           <ReduxProvider>
             <AuthProvider>
-              {children}
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  className: 'toast-with-progress',
-                  success: {
-                    className: 'toast-with-progress toast-success',
-                  },
-                  error: {
-                    className: 'toast-with-progress toast-error',
-                  },
-                }}
-              />
+              <PendingCountProvider>
+                {children}
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    duration: 4000,
+                    className: 'toast-with-progress',
+                    success: {
+                      className: 'toast-with-progress toast-success',
+                    },
+                    error: {
+                      className: 'toast-with-progress toast-error',
+                    },
+                  }}
+                />
+              </PendingCountProvider>
             </AuthProvider>
           </ReduxProvider>
         </ThemeProvider>

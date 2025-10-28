@@ -803,6 +803,22 @@ router.get('/stats/:publisherId', auth, async (req, res) => {
   }
 });
 
+// Get pending websites count (admin only)
+router.get('/admin/pending-count', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role?.name?.toLowerCase() !== 'admin' && req.user.role?.name?.toLowerCase() !== 'super admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const pendingCount = await Website.countDocuments({ status: 'pending' });
+
+    res.json({ pendingCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get all websites statistics (admin only)
 router.get('/admin/stats', auth, async (req, res) => {
   try {

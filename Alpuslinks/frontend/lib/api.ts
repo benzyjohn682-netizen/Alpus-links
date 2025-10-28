@@ -511,6 +511,10 @@ class ApiService {
     return this.request('/websites/admin/stats')
   }
 
+  async getPendingWebsitesCount() {
+    return this.request('/websites/admin/pending-count')
+  }
+
   // Bulk operations
   async bulkDeleteWebsites(websiteIds: string[]) {
     return this.request('/websites/bulk', {

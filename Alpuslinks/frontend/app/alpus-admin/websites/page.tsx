@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/pagination'
 import CustomSelect from '@/components/ui/custom-select'
 import toast from 'react-hot-toast'
+import { usePendingCount } from '@/contexts/pending-count-context'
 
 interface Website {
   _id: string
@@ -63,6 +64,7 @@ interface AdminWebsiteStats {
 
 export default function AdminWebsitesPage() {
   const router = useRouter()
+  const { clearPendingCount } = usePendingCount()
   const [websites, setWebsites] = useState<Website[]>([])
   const [stats, setStats] = useState<AdminWebsiteStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -82,6 +84,11 @@ export default function AdminWebsitesPage() {
   const [isSelectAll, setIsSelectAll] = useState(false)
   const [deletingWebsite, setDeletingWebsite] = useState<Website | null>(null)
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+
+  // Clear the pending count badge when the page loads
+  useEffect(() => {
+    clearPendingCount()
+  }, [clearPendingCount])
 
   const loadWebsites = useCallback(async () => {
     try {
@@ -176,6 +183,9 @@ export default function AdminWebsitesPage() {
         )
         toast.success(`Website status updated to ${status}`)
         loadStats() // Refresh stats
+        
+        // Dispatch event to update sidebar badge
+        window.dispatchEvent(new CustomEvent('websiteStatusChanged'))
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update website status'
@@ -301,6 +311,9 @@ export default function AdminWebsitesPage() {
         setIsSelectAll(false)
         toast.success(`Successfully updated ${selectedWebsites.length} website(s) status to ${status}!`)
         loadStats() // Refresh stats
+        
+        // Dispatch event to update sidebar badge
+        window.dispatchEvent(new CustomEvent('websiteStatusChanged'))
       } else {
         setError('No data received from server')
       }

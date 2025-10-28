@@ -7,6 +7,7 @@ import { ShoppingCart, Trash2, CreditCard, Shield, Sparkles, ArrowRight, Plus } 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { apiService } from '@/lib/api'
+import toast from 'react-hot-toast'
 
 interface Post {
   _id: string
@@ -153,8 +154,50 @@ export default function AdvertiserCartPage() {
     return getLIForDomain(domain).length > 0
   }
 
+  // Check if there are available (not already selected) Link Insertion posts for a domain
+  const hasAvailableLIForDomain = (domain: string, cartItemId: string): boolean => {
+    const posts = getLIForDomain(domain)
+    return posts.some(post => !isPostAlreadySelected(post._id, cartItemId, domain, 'linkInsertion'))
+  }
+
+  // Check if a post is already selected by another cart item for the same domain
+  const isPostAlreadySelected = (postId: string, cartItemId: string, domain: string, type: 'guestPost' | 'linkInsertion' | 'writingGuestPost') => {
+    const sameDomainItems = items.filter(item => 
+      item.domain.toLowerCase() === domain.toLowerCase() && 
+      item.type === type && 
+      item.id !== cartItemId
+    )
+    
+    return sameDomainItems.some(item => {
+      if (type === 'guestPost') {
+        return selectedGPItems[item.id] === postId
+      } else if (type === 'linkInsertion') {
+        return selectedLIItems[item.id] === postId
+      } else if (type === 'writingGuestPost') {
+        return selectedWGPItems[item.id] === postId
+      }
+      return false
+    })
+  }
+
   // Handle LI item selection
   const handleLISelection = (cartItemId: string, postId: string) => {
+    if (postId === '') {
+      setSelectedLIItems(prev => ({
+        ...prev,
+        [cartItemId]: ''
+      }))
+      return
+    }
+
+    const cartItem = items.find(item => item.id === cartItemId)
+    if (cartItem && isPostAlreadySelected(postId, cartItemId, cartItem.domain, 'linkInsertion')) {
+      toast.error('This post is already selected for another Link Insertion order for the same domain. Please select a different post or add a new one.', {
+        duration: 5000,
+      })
+      return
+    }
+
     setSelectedLIItems(prev => ({
       ...prev,
       [cartItemId]: postId
@@ -174,6 +217,12 @@ export default function AdvertiserCartPage() {
     return getWGPForDomain(domain).length > 0
   }
 
+  // Check if there are available (not already selected) Writing + GP posts for a domain
+  const hasAvailableWGPForDomain = (domain: string, cartItemId: string): boolean => {
+    const posts = getWGPForDomain(domain)
+    return posts.some(post => !isPostAlreadySelected(post._id, cartItemId, domain, 'writingGuestPost'))
+  }
+
   // Get regular posts for a specific domain
   const getGPForDomain = (domain: string): Post[] => {
     return regularPosts.filter(post => {
@@ -187,8 +236,30 @@ export default function AdvertiserCartPage() {
     return getGPForDomain(domain).length > 0
   }
 
+  // Check if there are available (not already selected) posts for a domain
+  const hasAvailableGPForDomain = (domain: string, cartItemId: string): boolean => {
+    const posts = getGPForDomain(domain)
+    return posts.some(post => !isPostAlreadySelected(post._id, cartItemId, domain, 'guestPost'))
+  }
+
   // Handle GP item selection
   const handleGPSelection = (cartItemId: string, postId: string) => {
+    if (postId === '') {
+      setSelectedGPItems(prev => ({
+        ...prev,
+        [cartItemId]: ''
+      }))
+      return
+    }
+
+    const cartItem = items.find(item => item.id === cartItemId)
+    if (cartItem && isPostAlreadySelected(postId, cartItemId, cartItem.domain, 'guestPost')) {
+      toast.error('This post is already selected for another Guest Post order for the same domain. Please select a different post or add a new one.', {
+        duration: 5000,
+      })
+      return
+    }
+
     setSelectedGPItems(prev => ({
       ...prev,
       [cartItemId]: postId
@@ -197,10 +268,53 @@ export default function AdvertiserCartPage() {
 
   // Handle Writing + GP item selection
   const handleWGPSelection = (cartItemId: string, postId: string) => {
+    if (postId === '') {
+      setSelectedWGPItems(prev => ({
+        ...prev,
+        [cartItemId]: ''
+      }))
+      return
+    }
+
+    const cartItem = items.find(item => item.id === cartItemId)
+    if (cartItem && isPostAlreadySelected(postId, cartItemId, cartItem.domain, 'writingGuestPost')) {
+      toast.error('This post is already selected for another Writing + GP order for the same domain. Please select a different post or add a new one.', {
+        duration: 5000,
+      })
+      return
+    }
+
     setSelectedWGPItems(prev => ({
       ...prev,
       [cartItemId]: postId
     }))
+  }
+
+  // Check if all cart items have corresponding products selected
+  const areAllItemsSelected = () => {
+    return items.every(item => {
+      if (item.type === 'guestPost') {
+        return selectedGPItems[item.id] && selectedGPItems[item.id] !== ''
+      } else if (item.type === 'linkInsertion') {
+        return selectedLIItems[item.id] && selectedLIItems[item.id] !== ''
+      } else if (item.type === 'writingGuestPost') {
+        return selectedWGPItems[item.id] && selectedWGPItems[item.id] !== ''
+      }
+      return false
+    })
+  }
+
+  // Handle order button click
+  const handleOrderClick = () => {
+    if (!areAllItemsSelected()) {
+      toast.error('Please select a product for each item in your cart before placing an order.', {
+        duration: 5000,
+      })
+      return
+    }
+    
+    // TODO: Implement actual order placement logic
+    toast.success('Order placed successfully!')
   }
 
   // Fetch posts on component mount
@@ -457,7 +571,7 @@ export default function AdvertiserCartPage() {
                               <div className="flex items-center space-x-2">
                                 {item.type === 'guestPost' && (
                                   <div className="flex items-center space-x-2">
-                                    {hasGPForDomain(item.domain) ? (
+                                    {hasAvailableGPForDomain(item.domain, item.id) ? (
                                       <div className="flex items-center space-x-2">
                                         <select
                                           value={selectedGPItems[item.id] || ''}
@@ -465,11 +579,20 @@ export default function AdvertiserCartPage() {
                                           className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                         >
                                           <option value="">Select GP Item</option>
-                                          {getGPForDomain(item.domain).map((post) => (
-                                            <option key={post._id} value={post._id}>
-                                              {post.title} - {post.anchorPairs?.length || 0} anchor(s)
-                                            </option>
-                                          ))}
+                                          {getGPForDomain(item.domain).map((post) => {
+                                            const isAlreadySelected = isPostAlreadySelected(post._id, item.id, item.domain, 'guestPost')
+                                            return (
+                                              <option 
+                                                key={post._id} 
+                                                value={post._id}
+                                                disabled={isAlreadySelected}
+                                                style={{ color: isAlreadySelected ? '#9CA3AF' : 'inherit' }}
+                                              >
+                                                {post.title} - {post.anchorPairs?.length || 0} anchor(s)
+                                                {isAlreadySelected ? ' (Already selected)' : ''}
+                                              </option>
+                                            )
+                                          })}
                                         </select>
                                       </div>
                                     ) : (
@@ -485,7 +608,7 @@ export default function AdvertiserCartPage() {
                                 )}
                                 {item.type === 'linkInsertion' && (
                                   <div className="flex items-center space-x-2">
-                                    {hasLIForDomain(item.domain) ? (
+                                    {hasAvailableLIForDomain(item.domain, item.id) ? (
                                       <div className="flex items-center space-x-2">
                                         <select
                                           value={selectedLIItems[item.id] || ''}
@@ -493,11 +616,20 @@ export default function AdvertiserCartPage() {
                                           className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                         >
                                           <option value="">Select LI Item</option>
-                                          {getLIForDomain(item.domain).map((post) => (
-                                            <option key={post._id} value={post._id}>
-                                              {post.title} - {post.anchorPairs?.length || 0} anchor(s)
-                                            </option>
-                                          ))}
+                                          {getLIForDomain(item.domain).map((post) => {
+                                            const isAlreadySelected = isPostAlreadySelected(post._id, item.id, item.domain, 'linkInsertion')
+                                            return (
+                                              <option 
+                                                key={post._id} 
+                                                value={post._id}
+                                                disabled={isAlreadySelected}
+                                                style={{ color: isAlreadySelected ? '#9CA3AF' : 'inherit' }}
+                                              >
+                                                {post.title} - {post.anchorPairs?.length || 0} anchor(s)
+                                                {isAlreadySelected ? ' (Already selected)' : ''}
+                                              </option>
+                                            )
+                                          })}
                                         </select>
                                       </div>
                                     ) : (
@@ -513,7 +645,7 @@ export default function AdvertiserCartPage() {
                                 )}
                                 {item.type === 'writingGuestPost' && (
                                   <div className="flex items-center space-x-2">
-                                    {hasWGPForDomain(item.domain) ? (
+                                    {hasAvailableWGPForDomain(item.domain, item.id) ? (
                                       <div className="flex items-center space-x-2">
                                         <select
                                           value={selectedWGPItems[item.id] || ''}
@@ -521,11 +653,20 @@ export default function AdvertiserCartPage() {
                                           className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                                         >
                                           <option value="">Select WP+GP Item</option>
-                                          {getWGPForDomain(item.domain).map((post) => (
-                                            <option key={post._id} value={post._id}>
-                                              {post.title} - {post.anchorPairs?.length || 0} anchor(s)
-                                            </option>
-                                          ))}
+                                          {getWGPForDomain(item.domain).map((post) => {
+                                            const isAlreadySelected = isPostAlreadySelected(post._id, item.id, item.domain, 'writingGuestPost')
+                                            return (
+                                              <option 
+                                                key={post._id} 
+                                                value={post._id}
+                                                disabled={isAlreadySelected}
+                                                style={{ color: isAlreadySelected ? '#9CA3AF' : 'inherit' }}
+                                              >
+                                                {post.title} - {post.anchorPairs?.length || 0} anchor(s)
+                                                {isAlreadySelected ? ' (Already selected)' : ''}
+                                              </option>
+                                            )
+                                          })}
                                         </select>
                                       </div>
                                     ) : (
@@ -589,9 +730,12 @@ export default function AdvertiserCartPage() {
 
 
                       {/* Checkout button */}
-                      <button className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                      <button 
+                        onClick={handleOrderClick}
+                        className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+                      >
                         <CreditCard className="w-5 h-5" />
-                        <span>Proceed to Checkout</span>
+                        <span>{areAllItemsSelected() ? 'Place order' : 'Make a order'}</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>

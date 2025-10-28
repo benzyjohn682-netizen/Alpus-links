@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
@@ -25,6 +25,7 @@ import { DefaultAvatar } from '@/components/ui/DefaultAvatar'
 import { getRoleNameLowercase } from '@/lib/roleUtils'
 import { useAppSelector, useAppDispatch } from '@/hooks/redux'
 import { toggleCollapsed, toggleSection } from '@/store/slices/sidebarSlice'
+import { usePendingCount } from '@/contexts/pending-count-context'
 
 type SidebarItem = {
   name: string
@@ -32,6 +33,7 @@ type SidebarItem = {
   href: string
   isAccordion?: boolean
   children?: SidebarItem[]
+  badge?: number
 }
 
 type SidebarSection = {
@@ -64,6 +66,7 @@ export function Sidebar() {
   const { collapsed, expandedSections } = useAppSelector((state) => state.sidebar)
   const { user } = useAuth()
   const pathname = usePathname()
+  const { pendingWebsitesCount } = usePendingCount()
   const role = getRoleNameLowercase(user?.role)
 
   const buildNavigation = (): Array<SidebarSection | { name: string; icon: any; href: string; children: [] }> => {
@@ -136,7 +139,12 @@ export function Sidebar() {
       })
       userChildren.push({ name: 'Role Management', icon: Shield, href: '/alpus-admin/roles' })
       userChildren.push({ name: 'Category Management', icon: Tag, href: '/alpus-admin/categories' })
-      userChildren.push({ name: 'Website Management', icon: BarChart3, href: '/alpus-admin/websites' })
+      userChildren.push({ 
+        name: 'Website Management', 
+        icon: BarChart3, 
+        href: '/alpus-admin/websites',
+        badge: pendingWebsitesCount > 0 ? pendingWebsitesCount : undefined
+      })
       userChildren.push({ name: 'System Settings', icon: Settings, href: '/alpus-admin/settings' })
     }
 
@@ -358,11 +366,18 @@ export function Sidebar() {
                           collapsed ? "justify-center" : "space-x-3"
                         )}
                       >
-                        {Icon && <Icon className="w-5 h-5 flex-shrink-0" />}
-                        {!collapsed && (
-                          <span className="text-sm font-medium">
-                            {child.name}
-                          </span>
+                        <div className="flex items-center space-x-3 flex-1">
+                          {Icon && <Icon className="w-5 h-5 flex-shrink-0" />}
+                          {!collapsed && (
+                            <span className="text-sm font-medium">
+                              {child.name}
+                            </span>
+                          )}
+                        </div>
+                        {!collapsed && child.badge && child.badge > 0 && (
+                          <div className="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px]">
+                            {child.badge}
+                          </div>
                         )}
                       </Link>
                     )
