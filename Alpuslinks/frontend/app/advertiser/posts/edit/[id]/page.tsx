@@ -301,6 +301,19 @@ export default function EditPostPage() {
         ? `${formData.domain}/${formData.slug}`
         : formData.domain || formData.slug || ''
       
+      // Filter out empty anchor pairs and ensure no duplicates
+      const allAnchorPairs = [...anchorPairs, ...extractedAnchorPairs]
+        .filter(pair => pair.text.trim() && pair.link.trim())
+        .map(pair => ({
+          text: pair.text.trim(),
+          link: pair.link.trim()
+        }))
+      
+      // Remove duplicates based on text and link combination
+      const uniqueAnchorPairs = allAnchorPairs.filter((pair, index, self) => 
+        index === self.findIndex(p => p.text === pair.text && p.link === pair.link)
+      )
+      
       const payload = {
         title: formData.title,
         completeUrl: completeUrl,
@@ -309,7 +322,8 @@ export default function EditPostPage() {
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
         content: formData.content,
-        anchorPairs: [...anchorPairs, ...extractedAnchorPairs].map(p => ({ text: p.text, link: p.link }))
+        anchorPairs: uniqueAnchorPairs,
+        status: 'draft' // Ensure it stays as draft
       }
       console.log('Updating post with payload:', payload)
       await apiService.updatePost(postId, payload)
@@ -349,6 +363,19 @@ export default function EditPostPage() {
         return
       }
       
+      // Filter out empty anchor pairs and ensure no duplicates
+      const allAnchorPairs = [...anchorPairs, ...extractedAnchorPairs]
+        .filter(pair => pair.text.trim() && pair.link.trim())
+        .map(pair => ({
+          text: pair.text.trim(),
+          link: pair.link.trim()
+        }))
+      
+      // Remove duplicates based on text and link combination
+      const uniqueAnchorPairs = allAnchorPairs.filter((pair, index, self) => 
+        index === self.findIndex(p => p.text === pair.text && p.link === pair.link)
+      )
+      
       const payload = {
         title: formData.title,
         completeUrl: completeUrl,
@@ -357,49 +384,23 @@ export default function EditPostPage() {
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
         content: formData.content,
-        anchorPairs: [...anchorPairs, ...extractedAnchorPairs].map(p => ({ text: p.text, link: p.link }))
+        anchorPairs: uniqueAnchorPairs,
+        status: 'pending' // Add status change to pending
       }
       
-      console.log('Submitting post with payload:', payload)
+      console.log('Updating post with payload:', payload)
       console.log('Complete URL being sent:', completeUrl)
       console.log('Title being sent:', formData.title)
       console.log('Content being sent:', formData.content)
       
-      const response = await apiService.submitPost(payload)
-      const newPostId = (response.data as any)?.post?._id
+      const response = await apiService.updatePost(postId, payload)
       
-      if (!newPostId) {
-        toast.error('Failed to get post ID from response')
-        return
-      }
-      
-      // Find the website by domain to get websiteId and price
-      const website = websites.find(w => {
-        const websiteDomain = w.domain || new URL(w.url).hostname.replace('www.', '')
-        const formDomain = formData.domain.replace(/^https?:\/\//, '').replace('www.', '')
-        return websiteDomain.toLowerCase() === formDomain.toLowerCase()
-      })
-      
-      if (!website) {
-        toast.error('Website not found for the selected domain')
-        return
-      }
-      
-      // Add the post to cart
-      dispatch(addPostToCart({
-        websiteId: website._id,
-        domain: website.domain || new URL(website.url).hostname.replace('www.', ''),
-        type: 'guestPost',
-        price: website.pricing?.guestPost || 0,
-        selectedPostId: newPostId
-      }))
-      
-      toast.success('Post submitted and added to cart')
-      router.push('/advertiser/cart')
+      toast.success('Post updated and submitted for review')
+      router.push('/advertiser/posts')
     } catch (e: any) {
-      console.error('Post submission error:', e)
+      console.error('Post update error:', e)
       console.error('Error details:', e.response?.data || e.message)
-      toast.error(e?.message || 'Failed to submit post')
+      toast.error(e?.message || 'Failed to update post')
     } finally {
       setSaving(false)
     }

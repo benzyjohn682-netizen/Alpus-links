@@ -187,6 +187,20 @@ export default function EditWritingGPPage() {
     if (!validate()) return toast.error('Please fix errors')
     try {
       setSaving(true)
+      
+      // Filter out empty anchor pairs and ensure no duplicates
+      const validAnchorPairs = formData.anchorPairs
+        .filter(pair => pair.text.trim() && pair.link.trim())
+        .map(pair => ({
+          text: pair.text.trim(),
+          link: pair.link.trim()
+        }))
+      
+      // Remove duplicates based on text and link combination
+      const uniqueAnchorPairs = validAnchorPairs.filter((pair, index, self) => 
+        index === self.findIndex(p => p.text === pair.text && p.link === pair.link)
+      )
+      
       await apiService.updatePost(postId, {
         title: formData.title,
         completeUrl: buildCompleteUrl(),
@@ -195,8 +209,9 @@ export default function EditWritingGPPage() {
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
-        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
-        postType: 'writing-gp'
+        anchorPairs: uniqueAnchorPairs,
+        postType: 'writing-gp',
+        status: 'draft' // Ensure it stays as draft
       })
       toast.success('Draft updated')
       router.push('/advertiser/posts')
@@ -212,6 +227,20 @@ export default function EditWritingGPPage() {
     if (!validate()) return toast.error('Please fix errors')
     try {
       setSaving(true)
+      
+      // Filter out empty anchor pairs and ensure no duplicates
+      const validAnchorPairs = formData.anchorPairs
+        .filter(pair => pair.text.trim() && pair.link.trim())
+        .map(pair => ({
+          text: pair.text.trim(),
+          link: pair.link.trim()
+        }))
+      
+      // Remove duplicates based on text and link combination
+      const uniqueAnchorPairs = validAnchorPairs.filter((pair, index, self) => 
+        index === self.findIndex(p => p.text === pair.text && p.link === pair.link)
+      )
+      
       const submitData = {
         title: formData.title,
         completeUrl: buildCompleteUrl(),
@@ -220,8 +249,9 @@ export default function EditWritingGPPage() {
         metaTitle: formData.metaTitle,
         metaDescription: formData.metaDescription,
         keywords: formData.keywords,
-        anchorPairs: formData.anchorPairs.filter(pair => pair.text.trim() && pair.link.trim()),
-        postType: 'writing-gp'
+        anchorPairs: uniqueAnchorPairs,
+        postType: 'writing-gp',
+        status: 'pending' // Add status change to pending
       }
       
       console.log('Updating Writing + GP post:', submitData)
@@ -428,7 +458,7 @@ export default function EditWritingGPPage() {
               </button>
               <button onClick={submit} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                 <Send className="w-4 h-4" />
-                <span>{saving ? 'Submitting...' : 'Submit for Review'}</span>
+                <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
               </button>
             </div>
           </div>

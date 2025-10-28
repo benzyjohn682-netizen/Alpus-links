@@ -235,7 +235,7 @@ router.put('/:id', auth, [
 
     const { id } = req.params;
     const advertiserId = req.user._id;
-    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs, postType } = req.body;
+    const { title, completeUrl, description, metaTitle, metaDescription, keywords, content, anchorPairs, postType, status } = req.body;
 
     const post = await Post.findOne({ _id: id, advertiserId });
     if (!post) {
@@ -275,6 +275,11 @@ router.put('/:id', auth, [
     post.content = content || '';
     post.anchorPairs = Array.isArray(anchorPairs) ? anchorPairs : [];
     post.postType = postType || 'regular';
+    
+    // Update status if provided
+    if (status && ['draft', 'pending', 'approved', 'rejected'].includes(status)) {
+      post.status = status;
+    }
     
     await post.save();
     res.json({ message: 'Post updated', post });

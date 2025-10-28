@@ -399,7 +399,7 @@ export default function CreateLinkInsertionPage() {
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
                 >
                   <Send className="w-5 h-5" />
-                  <span>{saving ? 'Submitting...' : 'Submit for Review'}</span>
+                  <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
                 </button>
               </div>
             </div>

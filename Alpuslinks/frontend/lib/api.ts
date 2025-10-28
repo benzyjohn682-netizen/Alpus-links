@@ -618,6 +618,7 @@ class ApiService {
     content: string
     anchorPairs?: { text: string; link: string }[]
     postType?: string
+    status?: string
   }) {
     return this.request(`/posts/${postId}`, {
       method: 'PUT',

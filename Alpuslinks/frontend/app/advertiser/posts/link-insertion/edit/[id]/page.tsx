@@ -250,7 +250,7 @@ export default function EditLinkInsertionAsPostPage() {
               </button>
               <button onClick={submit} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                 <Send className="w-4 h-4" />
-                <span>{saving ? 'Submitting...' : 'Submit for Review'}</span>
+                <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
               </button>
             </div>
           </div>
