@@ -348,8 +348,8 @@ export default function AdvertiserCartPage() {
   }
 
   const handleAddLI = (websiteId: string, domain: string, price: number) => {
-    // Navigate to create link insertion page
-    router.push('/advertiser/posts/link-insertion/create')
+    // Navigate to create link insertion page with domain parameter
+    router.push(`/advertiser/posts/link-insertion/create?domain=${encodeURIComponent(domain)}`)
   }
 
   const handleAddWritingGP = (websiteId: string, domain: string, price: number) => {

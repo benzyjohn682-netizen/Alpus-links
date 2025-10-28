@@ -2,7 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save, Send } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -21,9 +21,11 @@ interface LinkInsertionAsPost {
 
 export default function CreateLinkInsertionAsPostPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const [saving, setSaving] = useState(false)
   const [websites, setWebsites] = useState<any[]>([])
+  const [cartDomain, setCartDomain] = useState<string | null>(null)
   const [formData, setFormData] = useState<LinkInsertionAsPost>({
     title: '',
     completeUrl: '',
@@ -76,6 +78,14 @@ export default function CreateLinkInsertionAsPostPage() {
     }
   }
 
+  // Get domain from URL parameters
+  useEffect(() => {
+    const domain = searchParams.get('domain')
+    if (domain) {
+      setCartDomain(decodeURIComponent(domain))
+    }
+  }, [searchParams])
+
   // Fetch websites on component mount
   useEffect(() => {
     fetchWebsites()
@@ -83,6 +93,21 @@ export default function CreateLinkInsertionAsPostPage() {
 
   const isValidUrl = (url: string) => {
     try { new URL(url); return true } catch { return false }
+  }
+
+  // Check if post URL domain matches the cart domain
+  const isPostDomainMatchingCartDomain = (): boolean => {
+    if (!cartDomain || !formData.completeUrl.trim()) return true // Allow if no cart domain or no URL entered yet
+    
+    try {
+      const url = new URL(formatUrl(formData.completeUrl))
+      const postDomain = url.hostname.replace(/^www\./, '').toLowerCase()
+      const cartDomainNormalized = cartDomain.replace(/^www\./, '').toLowerCase()
+      
+      return postDomain === cartDomainNormalized
+    } catch {
+      return false
+    }
   }
 
   const validate = () => {
@@ -148,6 +173,13 @@ export default function CreateLinkInsertionAsPostPage() {
       return toast.error('Please fix errors')
     }
     
+    // Check if post URL domain matches cart domain
+    if (!isPostDomainMatchingCartDomain()) {
+      return toast.error(`The post URL domain must match the selected website domain (${cartDomain}). Please enter the correct URL.`, {
+        duration: 6000,
+      })
+    }
+    
     // Ensure domain exists in available websites
     if (!isDomainAvailable()) {
       return toast.error('Selected domain is not available. Please choose a domain from the available websites.')
@@ -182,6 +214,13 @@ export default function CreateLinkInsertionAsPostPage() {
     if (!validate()) {
       console.log('Validation failed, errors:', errors)
       return toast.error('Please fix errors')
+    }
+    
+    // Check if post URL domain matches cart domain
+    if (!isPostDomainMatchingCartDomain()) {
+      return toast.error(`The post URL domain must match the selected website domain (${cartDomain}). Please enter the correct URL.`, {
+        duration: 6000,
+      })
     }
     
     // Ensure domain exists in available websites
@@ -273,8 +312,23 @@ export default function CreateLinkInsertionAsPostPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Post URL</label>
+              {cartDomain && (
+                <div className="mb-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <span className="font-medium">Expected domain:</span> {cartDomain}
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    The post URL must be from this domain to match your cart selection.
+                  </p>
+                </div>
+              )}
               <input value={formData.completeUrl} onChange={e => setField('completeUrl', e.target.value)} className={`w-full px-3 py-2 rounded-xl border ${errors.completeUrl ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white`} placeholder="https://example.com/post" />
               {errors.completeUrl && <p className="text-sm text-red-600 mt-1">{errors.completeUrl}</p>}
+              {cartDomain && formData.completeUrl && !isPostDomainMatchingCartDomain() && (
+                <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+                  ⚠️ The URL domain doesn't match the expected domain ({cartDomain})
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
