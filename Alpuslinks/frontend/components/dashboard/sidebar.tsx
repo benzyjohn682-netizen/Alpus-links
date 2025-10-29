@@ -150,6 +150,7 @@ export function Sidebar() {
         href: '/alpus-admin/websites',
         badge: pendingWebsitesCount > 0 ? pendingWebsitesCount : undefined
       })
+      userChildren.push({ name: 'Order Management', icon: ClipboardList, href: '/alpus-admin/orders' })
       userChildren.push({ name: 'System Settings', icon: Settings, href: '/alpus-admin/settings' })
     }
 

@@ -850,6 +850,39 @@ class ApiService {
   async getOrderStats(userId: string) {
     return this.request(`/orders/stats/${userId}`)
   }
+
+  // Admin order management methods
+  async getAdminOrders(filters: {
+    status?: string
+    page?: number
+    limit?: number
+    search?: string
+    advertiserId?: string
+    publisherId?: string
+    type?: string
+    sortBy?: string
+    sortOrder?: string
+  } = {}) {
+    const params = new URLSearchParams()
+    if (filters.status) params.append('status', filters.status)
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.search) params.append('search', filters.search)
+    if (filters.advertiserId) params.append('advertiserId', filters.advertiserId)
+    if (filters.publisherId) params.append('publisherId', filters.publisherId)
+    if (filters.type) params.append('type', filters.type)
+    if (filters.sortBy) params.append('sortBy', filters.sortBy)
+    if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+    
+    return this.request(`/orders/admin?${params.toString()}`)
+  }
+
+  async updateOrderStatusByAdmin(orderId: string, status: string, note?: string, rejectionReason?: string) {
+    return this.request(`/orders/admin/${orderId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, note, rejectionReason })
+    })
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL)

@@ -296,6 +296,184 @@ router.patch('/:orderId/status', auth, async (req, res) => {
   }
 });
 
+// Get all orders for admin/super admin
+router.get('/admin', auth, async (req, res) => {
+  try {
+    const userRole = req.user.role?.name;
+    
+    // Check if user is admin or super admin
+    if (!['admin', 'super admin'].includes(userRole?.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { 
+      status, 
+      page = 1, 
+      limit = 20, 
+      search = '',
+      advertiserId,
+      publisherId,
+      type,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const query = {};
+    
+    // Filter by status if provided
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Filter by advertiser if provided
+    if (advertiserId) {
+      query.advertiserId = advertiserId;
+    }
+
+    // Filter by publisher if provided
+    if (publisherId) {
+      query.publisherId = publisherId;
+    }
+
+    // Filter by type if provided
+    if (type && type !== 'all') {
+      query.type = type;
+    }
+
+    // Search functionality
+    if (search) {
+      query.$or = [
+        { notes: { $regex: search, $options: 'i' } },
+        { rejectionReason: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const orders = await Order.find(query)
+      .populate('advertiserId', 'firstName lastName email company')
+      .populate('publisherId', 'firstName lastName email')
+      .populate('websiteId', 'domain url')
+      .populate('postId', 'title content')
+      .populate('linkInsertionId', 'anchorText anchorUrl')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Order.countDocuments(query);
+
+    // Get order statistics
+    const stats = await Order.aggregate([
+      { $group: {
+        _id: '$status',
+        count: { $sum: 1 }
+      }},
+      { $group: {
+        _id: null,
+        stats: { $push: { status: '$_id', count: '$count' } },
+        total: { $sum: '$count' }
+      }}
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        },
+        stats: stats[0] || { stats: [], total: 0 }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching admin orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
+      error: error.message
+    });
+  }
+});
+
+// Update order status by admin
+router.patch('/admin/:orderId', auth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, note, rejectionReason } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role?.name;
+
+    // Check if user is admin or super admin
+    if (!['admin', 'super admin'].includes(userRole?.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update order status
+    await order.updateStatus(status, note, userId);
+
+    // If rejected, add rejection reason
+    if (status === 'rejected' && rejectionReason) {
+      order.rejectionReason = rejectionReason;
+      await order.save();
+    }
+
+    // Update related post or link insertion status
+    if (order.postId && (status === 'inProgress' || status === 'completed')) {
+      await Post.findByIdAndUpdate(order.postId, { 
+        status: status === 'inProgress' ? 'inProgress' : 'approved' 
+      });
+    }
+
+    if (order.linkInsertionId && (status === 'inProgress' || status === 'completed')) {
+      await LinkInsertion.findByIdAndUpdate(order.linkInsertionId, { 
+        status: status === 'inProgress' ? 'inProgress' : 'approved' 
+      });
+    }
+
+    // Populate the updated order
+    const updatedOrder = await Order.findById(orderId)
+      .populate('advertiserId', 'firstName lastName email company')
+      .populate('publisherId', 'firstName lastName email')
+      .populate('websiteId', 'domain url')
+      .populate('postId', 'title content')
+      .populate('linkInsertionId', 'anchorText anchorUrl');
+
+    res.json({
+      success: true,
+      message: 'Order status updated successfully',
+      data: { order: updatedOrder }
+    });
+
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update order status',
+      error: error.message
+    });
+  }
+});
+
 // Get order details
 router.get('/:orderId', auth, async (req, res) => {
   try {
@@ -343,7 +521,7 @@ router.get('/:orderId', auth, async (req, res) => {
 router.get('/stats/:userId', auth, async (req, res) => {
   try {
     const { userId } = req.params;
-    const userRole = req.user.role;
+    const userRole = req.user.role?.name;
 
     let matchQuery = {};
     if (userRole === 'publisher') {
