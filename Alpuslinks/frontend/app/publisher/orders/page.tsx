@@ -510,10 +510,9 @@ export default function PublisherTaskManagementPage() {
                               <span>Post</span>
                             </h4>
                             <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {task.postId ? (
+                                {task.postId ? (
                                 <>
                                   <p className="font-medium">{task.postId.title}</p>
-                                  <p className="text-xs text-gray-500">Post ID: {task.postId._id}</p>
                                 </>
                               ) : (
                                 <p className="text-gray-500 italic">No post assigned</p>
@@ -522,35 +521,7 @@ export default function PublisherTaskManagementPage() {
                           </div>
                         </div>
 
-                        {/* Requirements and Notes */}
-                        {(task.requirements || task.notes) && (
-                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                              {task.requirements && (
-                                <div>
-                                  <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Requirements</h5>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    {task.requirements.minWordCount && (
-                                      <p>Min words: {task.requirements.minWordCount.toLocaleString()}</p>
-                                    )}
-                                    {task.requirements.maxLinks && (
-                                      <p>Max links: {task.requirements.maxLinks}</p>
-                                    )}
-                                    {task.requirements.deadline && (
-                                      <p>Deadline: {formatDate(task.requirements.deadline)}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                              {task.notes && (
-                                <div>
-                                  <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Notes</h5>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">{task.notes}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        {/* Requirements and Notes section removed as requested */}
 
                         {/* Price */}
                         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -612,14 +583,7 @@ export default function PublisherTaskManagementPage() {
                           <Eye className="w-4 h-4" />
                         </button>
                         
-                        <div className="relative">
-                          <button
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            title="More Actions"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        </div>
+                        {/* More Actions button removed as requested */}
                       </div>
                     </div>
                   </div>
