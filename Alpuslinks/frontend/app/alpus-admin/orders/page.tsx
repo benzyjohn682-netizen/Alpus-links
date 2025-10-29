@@ -143,7 +143,7 @@ export default function AdminOrdersPage() {
         type: selectedType === 'all' ? undefined : selectedType,
         sortBy,
         sortOrder
-      })
+      }) as any
       
       if (response.data?.success) {
         setOrders(response.data.data.orders || [])
@@ -170,7 +170,7 @@ export default function AdminOrdersPage() {
         newStatus,
         statusNote,
         rejectionReason
-      )
+      ) as any
 
       if (response.data?.success) {
         toast.success('Order status updated successfully')
@@ -520,7 +520,7 @@ export default function AdminOrdersPage() {
                 <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-12">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-12">
                         <input
                           type="checkbox"
                           checked={selectedOrders.length === orders.length && orders.length > 0}
@@ -564,7 +564,7 @@ export default function AdminOrdersPage() {
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {orders.map((order) => (
                       <tr key={order._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-2 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <input
                             type="checkbox"
                             checked={selectedOrders.includes(order._id)}
