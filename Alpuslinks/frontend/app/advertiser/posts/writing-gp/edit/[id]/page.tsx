@@ -2,7 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save, Send, ChevronDown, Search } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -23,8 +23,12 @@ interface WritingGPForm {
 export default function EditWritingGPPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const postId = (params?.id as string) || ''
   const dispatch = useAppDispatch()
+  
+  // Check if this is a view-only mode (from orders page)
+  const isViewOnly = searchParams.get('viewOnly') === 'true'
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -332,7 +336,12 @@ export default function EditWritingGPPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl p-6 space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
-              <input value={formData.title} onChange={e => setField('title', e.target.value)} className={`w-full px-3 py-2 rounded-xl border ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white`} />
+              <input 
+                value={formData.title} 
+                onChange={e => setField('title', e.target.value)} 
+                disabled={isViewOnly}
+                className={`w-full px-3 py-2 rounded-xl border ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`} 
+              />
               {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title}</p>}
             </div>
 
@@ -344,9 +353,9 @@ export default function EditWritingGPPage() {
                   <input
                     type="text"
                     value={formData.domain}
-                    disabled={isDomainFromCart}
+                    disabled={isDomainFromCart || isViewOnly}
                     onChange={(e) => {
-                      if (!isDomainFromCart) {
+                      if (!isDomainFromCart && !isViewOnly) {
                         const value = e.target.value
                         setField('domain', value)
                         setDomainSearchTerm(value)
@@ -355,12 +364,12 @@ export default function EditWritingGPPage() {
                       }
                     }}
                     onFocus={() => {
-                      if (!isDomainFromCart) {
+                      if (!isDomainFromCart && !isViewOnly) {
                         setShowDomainDropdown(true)
                       }
                     }}
                     onBlur={(e) => {
-                      if (!isDomainFromCart) {
+                      if (!isDomainFromCart && !isViewOnly) {
                         const relatedTarget = e.relatedTarget as HTMLElement
                         if (!relatedTarget || !relatedTarget.closest('[data-domain-dropdown]')) {
                           setTimeout(() => setShowDomainDropdown(false), 150)
@@ -368,9 +377,9 @@ export default function EditWritingGPPage() {
                       }
                     }}
                     placeholder={isDomainFromCart ? "Domain selected from cart" : "Select a domain..."}
-                    className={`w-full px-3 py-2 pr-10 rounded-xl border ${domainError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${isDomainFromCart ? 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}`}
+                    className={`w-full px-3 py-2 pr-10 rounded-xl border ${domainError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${isDomainFromCart || isViewOnly ? 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}`}
                   />
-                  {!isDomainFromCart && (
+                  {!isDomainFromCart && !isViewOnly && (
                     <button
                       type="button"
                       onClick={() => setShowDomainDropdown(!showDomainDropdown)}
@@ -463,7 +472,8 @@ export default function EditWritingGPPage() {
                           value={pair.text} 
                           onChange={e => updateAnchorPair(index, 'text', e.target.value)} 
                           placeholder="Enter anchor text..."
-                          className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                          disabled={isViewOnly}
+                          className={`w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`} 
                         />
                       </div>
                       <div>
@@ -472,17 +482,20 @@ export default function EditWritingGPPage() {
                           value={pair.link} 
                           onChange={e => updateAnchorPair(index, 'link', e.target.value)} 
                           placeholder="Enter anchor link..."
-                          className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                          disabled={isViewOnly}
+                          className={`w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`} 
                         />
                       </div>
                       <div className="md:col-span-2 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => removeAnchorPair(index)}
-                          className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        >
-                          Remove
-                        </button>
+                        {!isViewOnly && (
+                          <button
+                            type="button"
+                            onClick={() => removeAnchorPair(index)}
+                            className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -490,16 +503,31 @@ export default function EditWritingGPPage() {
               )}
             </div>
 
-            <div className="flex gap-3">
-              <button onClick={saveDraft} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save Draft'}</span>
-              </button>
-              <button onClick={submit} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                <Send className="w-4 h-4" />
-                <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
-              </button>
-            </div>
+            {!isViewOnly && (
+              <div className="flex gap-3">
+                <button onClick={saveDraft} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving...' : 'Save Draft'}</span>
+                </button>
+                <button onClick={submit} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                  <Send className="w-4 h-4" />
+                  <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
+                </button>
+              </div>
+            )}
+            
+            {/* View Only Notice */}
+            {isViewOnly && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+                  <Search className="w-5 h-5" />
+                  <span className="font-medium">View Only Mode</span>
+                </div>
+                <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                  You are viewing this writing + GP post from an order. Editing is disabled to prevent conflicts with ongoing work.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

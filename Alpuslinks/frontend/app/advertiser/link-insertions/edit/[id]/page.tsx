@@ -2,7 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save, Send, Link, Unlink, Plus, Trash2, Edit3, ExternalLink } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -23,7 +23,11 @@ interface LinkInsertion {
 export default function EditLinkInsertionPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const linkInsertionId = (params?.id as string) || ''
+  
+  // Check if this is a view-only mode (from orders page)
+  const isViewOnly = searchParams.get('viewOnly') === 'true'
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -233,11 +237,12 @@ export default function EditLinkInsertionPage() {
                     value={formData.postUrl}
                     onChange={(e) => handleInputChange('postUrl', e.target.value)}
                     placeholder="https://example.com/post-title"
+                    disabled={isViewOnly}
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-mono ${
                       errors.postUrl 
                         ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-blue-500/20 focus:border-blue-500'
-                    }`}
+                    } ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                   <ExternalLink className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 </div>
@@ -264,11 +269,12 @@ export default function EditLinkInsertionPage() {
                     value={formData.anchorText}
                     onChange={(e) => handleInputChange('anchorText', e.target.value)}
                     placeholder="Click here to learn more"
+                    disabled={isViewOnly}
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-semibold ${
                       errors.anchorText 
                         ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-green-500/20 focus:border-green-500'
-                    }`}
+                    } ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                   <Link className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 </div>
@@ -295,11 +301,12 @@ export default function EditLinkInsertionPage() {
                     value={formData.anchorUrl}
                     onChange={(e) => handleInputChange('anchorUrl', e.target.value)}
                     placeholder="https://your-website.com/target-page"
+                    disabled={isViewOnly}
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-mono ${
                       errors.anchorUrl 
                         ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-purple-500/20 focus:border-purple-500'
-                    }`}
+                    } ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                   <ExternalLink className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 </div>
@@ -326,11 +333,12 @@ export default function EditLinkInsertionPage() {
                     onChange={(e) => handleInputChange('currentText', e.target.value)}
                     placeholder="The existing text in the post that needs to be modified..."
                     rows={4}
+                    disabled={isViewOnly}
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg resize-none ${
                       errors.currentText 
                         ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-orange-500/20 focus:border-orange-500'
-                    }`}
+                    } ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 {errors.currentText && (
@@ -356,11 +364,12 @@ export default function EditLinkInsertionPage() {
                     onChange={(e) => handleInputChange('fixedText', e.target.value)}
                     placeholder="The corrected or improved text that should replace the current text..."
                     rows={4}
+                    disabled={isViewOnly}
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg resize-none ${
                       errors.fixedText 
                         ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-teal-500/20 focus:border-teal-500'
-                    }`}
+                    } ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 {errors.fixedText && (
@@ -386,11 +395,12 @@ export default function EditLinkInsertionPage() {
                     onChange={(e) => handleInputChange('addingText', e.target.value)}
                     placeholder="Additional text or context that should be added to the post..."
                     rows={4}
+                    disabled={isViewOnly}
                     className={`w-full px-4 py-3 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg resize-none ${
                       errors.addingText 
                         ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-yellow-500/20 focus:border-yellow-500'
-                    }`}
+                    } ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 {errors.addingText && (
@@ -430,26 +440,41 @@ export default function EditLinkInsertionPage() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={handleSaveDraft}
-                  disabled={saving}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
-                >
-                  <Save className="w-5 h-5" />
-                  <span>{saving ? 'Saving...' : 'Update Draft'}</span>
-                </button>
-                {formData.status !== 'approved' && (
+              {!isViewOnly && (
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <button
-                    onClick={handleSubmit}
+                    onClick={handleSaveDraft}
                     disabled={saving}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
                   >
-                    <Send className="w-5 h-5" />
-                    <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
+                    <Save className="w-5 h-5" />
+                    <span>{saving ? 'Saving...' : 'Update Draft'}</span>
                   </button>
-                )}
-              </div>
+                  {formData.status !== 'approved' && (
+                    <button
+                      onClick={handleSubmit}
+                      disabled={saving}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+                    >
+                      <Send className="w-5 h-5" />
+                      <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {/* View Only Notice */}
+              {isViewOnly && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mt-6">
+                  <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+                    <ExternalLink className="w-5 h-5" />
+                    <span className="font-medium">View Only Mode</span>
+                  </div>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                    You are viewing this link insertion from an order. Editing is disabled to prevent conflicts with ongoing work.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

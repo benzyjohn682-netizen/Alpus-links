@@ -32,7 +32,7 @@ interface Post {
   metaDescription: string
   keywords: string
   content: string
-  status: 'draft' | 'pending' | 'approved' | 'rejected'
+  status: 'draft' | 'pending' | 'inProgress' | 'approved' | 'rejected'
   postType: 'regular' | 'link-insertion' | 'writing-gp'
   createdAt: string
   updatedAt: string
@@ -88,6 +88,8 @@ export default function PostManagementPage() {
         return <CheckCircle className="w-4 h-4 text-green-500" />
       case 'approved':
         return <CheckCircle className="w-4 h-4 text-blue-500" />
+      case 'inProgress':
+        return <Clock className="w-4 h-4 text-blue-600" />
       case 'pending':
         return <Clock className="w-4 h-4 text-yellow-500" />
       case 'rejected':
@@ -104,6 +106,8 @@ export default function PostManagementPage() {
       case 'published':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
       case 'approved':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'inProgress':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
@@ -460,20 +464,24 @@ export default function PostManagementPage() {
                           {getStatusIcon(post.status)}
                           <span className="ml-1 capitalize">{post.status}</span>
                         </span>
-                        <button
-                          onClick={() => handleEditPost(post)}
-                          className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                          title={getEditButtonText(post)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePost(post)}
-                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Delete Post"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {post.status !== 'inProgress' && (
+                          <>
+                            <button
+                              onClick={() => handleEditPost(post)}
+                              className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                              title={getEditButtonText(post)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(post)}
+                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Delete Post"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

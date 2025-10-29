@@ -2,7 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useAppDispatch } from '@/hooks/redux'
 import { addItem } from '@/store/slices/cartSlice'
 import { addPostToCart } from '@/store/slices/cartSlice'
@@ -22,8 +22,12 @@ interface AnchorPair {
 export default function EditPostPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const postId = (params?.id as string) || ''
   const dispatch = useAppDispatch()
+  
+  // Check if this is a view-only mode (from orders page)
+  const isViewOnly = searchParams.get('viewOnly') === 'true'
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -740,7 +744,8 @@ export default function EditPostPage() {
                           value={formData.title}
                           onChange={(e) => handleInputChange('title', e.target.value)}
                           placeholder="Type here your creative post name"
-                          className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 text-lg font-semibold"
+                          disabled={isViewOnly}
+                          className={`w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 text-lg font-semibold ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                         />
                         <span className="absolute right-4 top-4 text-sm text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium">{formData.title.length}</span>
                       </div>
@@ -774,16 +779,18 @@ export default function EditPostPage() {
                                 }
                               }}
                               placeholder="Select a domain..."
+                              disabled={isViewOnly}
                               className={`w-full px-4 py-3 pr-10 border-2 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 transition-all duration-300 text-lg font-mono ${
                                 domainError 
                                   ? 'bg-white dark:bg-gray-800 border-red-500 focus:ring-red-500/20 focus:border-red-500' 
                                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-purple-500/20 focus:border-purple-500'
-                              }`}
+                              } ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                             />
                             <button
                               type="button"
                               onClick={() => setShowDomainDropdown(!showDomainDropdown)}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+                              disabled={isViewOnly}
+                              className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 ${isViewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               <ChevronDown className={`w-5 h-5 transition-transform ${showDomainDropdown ? 'rotate-180' : ''}`} />
                             </button>
@@ -878,7 +885,8 @@ export default function EditPostPage() {
                             handleInputChange('slug', slug)
                           }}
                           placeholder="your-article-slug"
-                          className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 text-lg font-mono"
+                          disabled={isViewOnly}
+                          className={`w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 text-lg font-mono ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                         />
                         <span className="absolute right-4 top-4 text-sm text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium">{formData.slug.length}</span>
                       </div>
@@ -955,6 +963,7 @@ export default function EditPostPage() {
                               }}
                               placeholder="Start writing your content here..."
                               height="450px"
+                              readOnly={isViewOnly}
                             />
                           ) : (
                             <CodeEditor
@@ -966,6 +975,7 @@ export default function EditPostPage() {
                               language="html"
                               height="450px"
                               placeholder="Start typing your HTML code here..."
+                              readOnly={isViewOnly}
                             />
                           )}
                           
@@ -1015,7 +1025,8 @@ export default function EditPostPage() {
                             value={formData.metaTitle}
                             onChange={(e) => handleInputChange('metaTitle', e.target.value)}
                             placeholder="Type here your meta title"
-                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-300 text-lg font-semibold"
+                            disabled={isViewOnly}
+                            className={`w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-300 text-lg font-semibold ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                           />
                           <span className="absolute right-4 top-4 text-sm text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium">{formData.metaTitle.length}</span>
                         </div>
@@ -1032,7 +1043,8 @@ export default function EditPostPage() {
                             onChange={(e) => handleInputChange('metaDescription', e.target.value)}
                             placeholder="Briefly and succinctly describe what your post is about"
                             rows={4}
-                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-300 text-lg font-semibold resize-none"
+                            disabled={isViewOnly}
+                            className={`w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-300 text-lg font-semibold resize-none ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                           />
                           <span className="absolute bottom-4 right-4 text-sm text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium">{formData.metaDescription.length}</span>
                         </div>
@@ -1061,7 +1073,8 @@ export default function EditPostPage() {
                           value={formData.keywords}
                           onChange={(e) => handleInputChange('keywords', e.target.value)}
                           placeholder="Enter keywords separated by commas"
-                          className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-300 text-lg font-semibold"
+                          disabled={isViewOnly}
+                          className={`w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-4 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-300 text-lg font-semibold ${isViewOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                         />
                         <span className="absolute right-4 top-4 text-sm text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-medium">{formData.keywords.length}</span>
                       </div>
@@ -1120,26 +1133,41 @@ export default function EditPostPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden hover:shadow-3xl transition-all duration-300">
-                    <div className="p-4 space-y-3">
-                      <button
-                        onClick={handleSaveDraft}
-                        disabled={saving}
-                        className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
-                      >
-                        <Save className="w-5 h-5" />
-                        <span>{saving ? 'Saving...' : 'Update Post'}</span>
-                      </button>
-                      <button
-                        onClick={handleSendToModeration}
-                        disabled={saving}
-                        className="w-full bg-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
-                      >
-                        <Send className="w-5 h-5" />
-                        <span>Submit for Moderation</span>
-                      </button>
+                  {!isViewOnly && (
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden hover:shadow-3xl transition-all duration-300">
+                      <div className="p-4 space-y-3">
+                        <button
+                          onClick={handleSaveDraft}
+                          disabled={saving}
+                          className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+                        >
+                          <Save className="w-5 h-5" />
+                          <span>{saving ? 'Saving...' : 'Update Post'}</span>
+                        </button>
+                        <button
+                          onClick={handleSendToModeration}
+                          disabled={saving}
+                          className="w-full bg-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50"
+                        >
+                          <Send className="w-5 h-5" />
+                          <span>Submit for Moderation</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  
+                  {/* View Only Notice */}
+                  {isViewOnly && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                      <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+                        <Eye className="w-5 h-5" />
+                        <span className="font-medium">View Only Mode</span>
+                      </div>
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                        You are viewing this post from an order. Editing is disabled to prevent conflicts with ongoing work.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

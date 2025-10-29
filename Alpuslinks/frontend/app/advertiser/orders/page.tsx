@@ -2,6 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   ClipboardList, 
   Clock, 
@@ -76,6 +77,7 @@ interface TabData {
 }
 
 export default function AdvertiserOrdersPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('all')
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -189,6 +191,21 @@ export default function AdvertiserOrdersPage() {
     } catch (error) {
       console.error('Error updating order status:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to update order status')
+    }
+  }
+
+  // Handle view details - navigate to appropriate edit page
+  const handleViewDetails = (order: Order) => {
+    const viewOnlyParam = '?viewOnly=true'
+    
+    if (order.type === 'guestPost' && order.postId) {
+      router.push(`/advertiser/posts/edit/${order.postId._id}${viewOnlyParam}`)
+    } else if (order.type === 'linkInsertion' && order.linkInsertionId) {
+      router.push(`/advertiser/link-insertions/edit/${order.linkInsertionId._id}${viewOnlyParam}`)
+    } else if (order.type === 'writingGuestPost' && order.postId) {
+      router.push(`/advertiser/posts/writing-gp/edit/${order.postId._id}${viewOnlyParam}`)
+    } else {
+      toast.error('Unable to view details for this order type')
     }
   }
 
@@ -362,7 +379,6 @@ export default function AdvertiserOrdersPage() {
                               </h4>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
                                 <p className="font-medium">{order.publisherId.firstName} {order.publisherId.lastName}</p>
-                                <p>{order.publisherId.email}</p>
                               </div>
                             </div>
 
@@ -388,7 +404,6 @@ export default function AdvertiserOrdersPage() {
                                 {order.postId ? (
                                   <>
                                     <p className="font-medium">{order.postId.title}</p>
-                                    <p className="text-xs text-gray-500">Post ID: {order.postId._id}</p>
                                   </>
                                 ) : order.linkInsertionId ? (
                                   <>
@@ -450,7 +465,7 @@ export default function AdvertiserOrdersPage() {
                           )}
                           
                           <button
-                            onClick={() => {/* View order details */}}
+                            onClick={() => handleViewDetails(order)}
                             className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                             title="View Details"
                           >
