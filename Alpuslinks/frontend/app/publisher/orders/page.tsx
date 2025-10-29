@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useAuth } from '@/contexts/auth-context'
 
 // Types
 interface Task {
@@ -69,6 +70,7 @@ interface TabData {
 }
 
 export default function PublisherTaskManagementPage() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('requested')
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,6 +87,8 @@ export default function PublisherTaskManagementPage() {
     { id: 'completed', label: 'Completed', count: 0, icon: CheckCircle, color: 'green' },
     { id: 'rejected', label: 'Rejected', count: 0, icon: XCircle, color: 'red' }
   ]
+
+  const [stats, setStats] = useState<{ total: number; stats: Array<{ status: string; count: number }>}>({ total: 0, stats: [] })
 
   // Fetch tasks from API
   const fetchTasks = async () => {
@@ -119,6 +123,7 @@ export default function PublisherTaskManagementPage() {
         toast.success(`Order ${newStatus === 'inProgress' ? 'accepted' : newStatus === 'rejected' ? 'rejected' : 'updated'} successfully`)
         // Refresh the tasks list
         fetchTasks()
+        fetchCounts()
       } else {
         throw new Error(response.data?.message || 'Failed to update order status')
       }
@@ -142,15 +147,37 @@ export default function PublisherTaskManagementPage() {
     handleOrderStatusUpdate(orderId, 'rejected', 'Order rejected', rejectionReason)
   }
 
-  // Update tab counts
-  const updateTabCounts = () => {
-    const counts = tabs.map(tab => {
-      if (tab.id === 'all') {
-        return { ...tab, count: tasks.length }
+  // Fetch global stats for counts
+  const fetchCounts = async () => {
+    try {
+      const userId = (user as any)?.id || (user as any)?._id
+      if (!userId) return
+      const response = await apiService.getOrderStats(userId)
+      if (response.data?.success) {
+        const data = response.data.data || {}
+        const raw = data.stats
+        if (Array.isArray(raw)) {
+          setStats({ total: typeof data.total === 'number' ? data.total : (raw.reduce((a: number, s: any) => a + (s?.count || 0), 0)), stats: raw })
+        } else if (raw && typeof raw === 'object') {
+          const orderedKeys = ['requested','inProgress','advertiserApproval','completed','rejected']
+          const arr = orderedKeys.map(k => ({ status: k, count: Number((raw as any)[k] || 0) }))
+          const total = arr.reduce((a, s) => a + s.count, 0)
+          setStats({ total, stats: arr })
+        } else {
+          setStats({ total: 0, stats: [] })
+        }
       }
-      return { ...tab, count: tasks.filter(task => task.status === tab.id).length }
-    })
-    return counts
+    } catch (err) {
+      console.error('Error fetching order stats:', err)
+    }
+  }
+
+  // Update tab counts using stats
+  const updateTabCounts = () => {
+    const byStatus: Record<string, number> = {}
+    const statArray = Array.isArray(stats.stats) ? stats.stats : []
+    statArray.forEach((s: any) => { if (s && s.status) byStatus[s.status] = s.count || 0 })
+    return tabs.map(tab => tab.id === 'all' ? { ...tab, count: stats.total || 0 } : { ...tab, count: byStatus[tab.id] || 0 })
   }
 
   // Filter tasks based on active tab and search
@@ -225,6 +252,14 @@ export default function PublisherTaskManagementPage() {
   useEffect(() => {
     fetchTasks()
   }, [activeTab, searchTerm])
+
+  useEffect(() => {
+    fetchCounts()
+  }, [user?.id])
+
+  useEffect(() => {
+    fetchCounts()
+  }, [activeTab])
 
   const tabCounts = updateTabCounts()
 
