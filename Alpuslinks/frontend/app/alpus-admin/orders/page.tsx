@@ -579,14 +579,11 @@ export default function AdminOrdersPage() {
                           />
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center">
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(order.type)}`}>
                               {order.type === 'guestPost' ? 'Guest Post' : 
                                order.type === 'linkInsertion' ? 'Link Insertion' : 
                                'Writing + GP'}
-                            </span>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                              #{order._id.slice(-8)}
                             </span>
                           </div>
                         </td>
