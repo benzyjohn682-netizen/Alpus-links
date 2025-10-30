@@ -108,10 +108,10 @@ export default function AdvertiserOrdersPage() {
         status: activeTab === 'all' ? undefined : activeTab
       })
       
-      if (response.data?.success) {
-        setOrders(response.data.data.orders || [])
+      if ((response.data as any)?.success) {
+        setOrders((response.data as any).data.orders || [])
       } else {
-        throw new Error(response.data?.message || 'Failed to fetch orders')
+        throw new Error((response.data as any)?.message || 'Failed to fetch orders')
       }
     } catch (err) {
       console.error('Error fetching orders:', err)
@@ -127,8 +127,8 @@ export default function AdvertiserOrdersPage() {
       const userId = (user as any)?.id || (user as any)?._id
       if (!userId) return
       const response = await apiService.getOrderStats(userId)
-      if (response.data?.success) {
-        const data = response.data.data || {}
+      if ((response.data as any)?.success) {
+        const data = (response.data as any).data || {}
         const raw = data.stats
         if (Array.isArray(raw)) {
           setStats({ total: typeof data.total === 'number' ? data.total : (raw.reduce((a: number, s: any) => a + (s?.count || 0), 0)), stats: raw })
@@ -208,12 +208,12 @@ export default function AdvertiserOrdersPage() {
       
       const response = await apiService.updateOrderStatus(orderId, newStatus, note)
       
-      if (response.data?.success) {
+      if ((response.data as any)?.success) {
         toast.success(`Order ${action === 'approve' ? 'approved' : 'rejected'} successfully`)
         fetchOrders()
         fetchCounts()
       } else {
-        throw new Error(response.data?.message || 'Failed to update order status')
+        throw new Error((response.data as any)?.message || 'Failed to update order status')
       }
     } catch (error) {
       console.error('Error updating order status:', error)
@@ -342,7 +342,6 @@ export default function AdvertiserOrdersPage() {
           </div>
 
           {/* Content */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -381,131 +380,181 @@ export default function AdvertiserOrdersPage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {filteredOrders.map((order) => (
-                  <div key={order._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          {/* Order Header */}
-                          <div className="flex items-center space-x-3 mb-4">
-                            <div className="flex items-center space-x-2">
-                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                                {order.status.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                              </span>
-                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(order.type)}`}>
-                                {order.type === 'guestPost' ? 'Guest Post' : 
-                                 order.type === 'linkInsertion' ? 'Link Insertion' : 
-                                 'Writing + GP'}
-                              </span>
+                  <div key={order._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+                    <div className="p-8">
+                      {/* Order Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+                        <div className="flex flex-wrap items-center gap-3 mb-4 sm:mb-0">
+                          <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(order.status)}`}>
+                            {order.status.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                          </span>
+                          <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${getTypeColor(order.type)}`}>
+                            {order.type === 'guestPost' ? 'Guest Post' : 
+                             order.type === 'linkInsertion' ? 'Link Insertion' : 
+                             'Writing + GP'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                          <Calendar className="w-4 h-4" />
+                          <span className="font-medium">Created {formatDate(order.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      {/* Main Content Grid */}
+                      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 mb-8">
+                        {/* Publisher Info */}
+                        <div className="xl:col-span-1">
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 h-full">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Publisher</h4>
                             </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                              <Calendar className="w-4 h-4" />
-                              <span>Created {formatDate(order.createdAt)}</span>
+                            <div className="space-y-1">
+                              <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                {order.publisherId.firstName} {order.publisherId.lastName}
+                              </p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {order.publisherId.email}
+                              </p>
                             </div>
                           </div>
+                        </div>
 
-                          {/* Order Content */}
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Publisher Info */}
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center space-x-2">
-                                <User className="w-4 h-4" />
-                                <span>Publisher</span>
-                              </h4>
-                              <div className="text-sm text-gray-600 dark:text-gray-400">
-                                <p className="font-medium">{order.publisherId.firstName} {order.publisherId.lastName}</p>
+                        {/* Website Info */}
+                        <div className="xl:col-span-1">
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 h-full">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                <Globe className="w-4 h-4 text-green-600 dark:text-green-400" />
                               </div>
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Website</h4>
                             </div>
+                            <div className="space-y-1">
+                              <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                {order.websiteId.domain}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500 break-all">
+                                {order.websiteId.url}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
 
-                            {/* Website Info */}
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center space-x-2">
-                                <Globe className="w-4 h-4" />
-                                <span>Website</span>
-                              </h4>
-                              <div className="text-sm text-gray-600 dark:text-gray-400">
-                                <p className="font-medium">{order.websiteId.domain}</p>
-                                <p className="text-xs text-gray-500">{order.websiteId.url}</p>
+                        {/* Content Info */}
+                        <div className="xl:col-span-1">
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 h-full">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                               </div>
-                            </div>
-
-                            {/* Post Info */}
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center space-x-2">
-                                <FileText className="w-4 h-4" />
-                                <span>Post</span>
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {order.type === 'linkInsertion' ? 'Link' : 'Post'}
                               </h4>
-                              <div className="text-sm text-gray-600 dark:text-gray-400">
-                                {order.postId ? (
-                                  <>
-                                    <p className="font-medium">{order.postId.title}</p>
-                                  </>
-                                ) : order.linkInsertionId ? (
-                                  <>
-                                    <p className="font-medium">{order.linkInsertionId.anchorText}</p>
-                                    <p className="text-xs text-gray-500">Link: {order.linkInsertionId.anchorUrl}</p>
-                                  </>
-                                ) : (
-                                  <p className="text-gray-500 italic">No content assigned</p>
+                            </div>
+                            <div className="space-y-1">
+                              {order.postId ? (
+                                <p className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-2">
+                                  {order.postId.title}
+                                </p>
+                              ) : order.linkInsertionId ? (
+                                <>
+                                  <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                    {order.linkInsertionId.anchorText}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-500 break-all">
+                                    {order.linkInsertionId.anchorUrl}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-500 dark:text-gray-500 italic">
+                                  No content assigned
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Price & Actions */}
+                        <div className="xl:col-span-1">
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 h-full">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                                <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                              </div>
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Price</h4>
+                            </div>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                                  ${order.price.toFixed(2)}
+                                </span>
+                                {order.completedAt && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-500 text-right">
+                                    <div className="font-medium">Completed</div>
+                                    <div>{formatDate(order.completedAt)}</div>
+                                  </div>
                                 )}
                               </div>
-                            </div>
-                          </div>
-
-                          {/* Price */}
-                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2 text-lg font-semibold text-gray-900 dark:text-white">
-                                <DollarSign className="w-5 h-5" />
-                                <span>${order.price.toFixed(2)}</span>
-                              </div>
-                              {order.completedAt && (
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  Completed: {formatDate(order.completedAt)}
+                              
+                              {/* Approve/Reject Buttons */}
+                              {order.status === 'advertiserApproval' && (
+                                <div className="flex flex-col space-y-2">
+                                  <button
+                                    onClick={() => handleOrderAction(order._id, 'approve')}
+                                    className="w-full px-4 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 shadow-sm"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span>Approve Order</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleOrderAction(order._id, 'reject')}
+                                    className="w-full px-4 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2 shadow-sm"
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                    <span>Reject Order</span>
+                                  </button>
                                 </div>
                               )}
                             </div>
                           </div>
+                        </div>
+                      </div>
 
-                          {/* Rejection Reason */}
-                          {order.status === 'rejected' && order.rejectionReason && (
-                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                                <h5 className="text-sm font-medium text-red-800 dark:text-red-300 mb-1">Rejection Reason</h5>
+                      {/* Rejection Reason */}
+                      {order.status === 'rejected' && order.rejectionReason && (
+                        <div className="mb-6">
+                          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                            <div className="flex items-start space-x-2">
+                              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <h5 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">Rejection Reason</h5>
                                 <p className="text-sm text-red-700 dark:text-red-400">{order.rejectionReason}</p>
                               </div>
                             </div>
-                          )}
+                          </div>
                         </div>
+                      )}
 
-                        {/* Actions */}
-                        <div className="ml-6 flex items-center space-x-2">
-                          {order.status === 'advertiserApproval' && (
-                            <>
-                              <button
-                                onClick={() => handleOrderAction(order._id, 'approve')}
-                                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                                <span>Approve</span>
-                              </button>
-                              <button
-                                onClick={() => handleOrderAction(order._id, 'reject')}
-                                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                              >
-                                <XCircle className="w-4 h-4" />
-                                <span>Reject</span>
-                              </button>
-                            </>
-                          )}
-                          
+                      {/* Bottom Actions Bar */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center space-x-4">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <span className="font-medium">Order ID:</span> {order._id.slice(-8)}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleViewDetails(order)}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center space-x-2 text-sm font-medium"
                             title="View Details"
                           >
                             <Eye className="w-4 h-4" />
+                            <span>View Details</span>
                           </button>
                         </div>
                       </div>
@@ -514,7 +563,6 @@ export default function AdvertiserOrdersPage() {
                 ))}
               </div>
             )}
-          </div>
         </div>
       </div>
     </ProtectedRoute>

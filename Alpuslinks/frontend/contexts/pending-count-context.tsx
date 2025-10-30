@@ -22,7 +22,7 @@ export function PendingCountProvider({ children }: { children: ReactNode }) {
     if (role === 'admin' || role === 'super admin') {
       try {
         const response = await apiService.getPendingWebsitesCount()
-        setPendingWebsitesCount(response.data?.pendingCount || 0)
+        setPendingWebsitesCount((response.data as any)?.pendingCount || 0)
       } catch (error) {
         console.error('Failed to fetch pending websites count:', error)
       }
