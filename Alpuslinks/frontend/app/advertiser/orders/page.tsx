@@ -227,8 +227,18 @@ export default function AdvertiserOrdersPage() {
     
     if (order.type === 'guestPost' && order.postId) {
       router.push(`/advertiser/posts/edit/${order.postId._id}${viewOnlyParam}`)
-    } else if (order.type === 'linkInsertion' && order.linkInsertionId) {
-      router.push(`/advertiser/link-insertions/edit/${order.linkInsertionId._id}${viewOnlyParam}`)
+    } else if (order.type === 'linkInsertion') {
+      // Always navigate to the Post-based Link Insertion editor
+      const postBasedId = order.postId?._id
+      const li: any = order.linkInsertionId as any
+      const fallbackId = (typeof li === 'string') ? li : (li?._id || li?.id)
+      const targetId = postBasedId || fallbackId
+      if (targetId) {
+        router.push(`/advertiser/posts/link-insertion/edit/${targetId}${viewOnlyParam}`)
+      } else {
+        toast.error('No link insertion found to view')
+      }
+      return
     } else if (order.type === 'writingGuestPost' && order.postId) {
       router.push(`/advertiser/posts/writing-gp/edit/${order.postId._id}${viewOnlyParam}`)
     } else {
@@ -255,7 +265,7 @@ export default function AdvertiserOrdersPage() {
   return (
     <ProtectedRoute allowedRoles={["advertiser"]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-4 mb-6">

@@ -40,6 +40,7 @@ export default function EditWritingGPPage() {
     anchorPairs: [{ text: '', link: '' }]
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [postStatus, setPostStatus] = useState<string>('draft')
   const [websites, setWebsites] = useState<any[]>([])
   const [loadingWebsites, setLoadingWebsites] = useState(false)
   const [showDomainDropdown, setShowDomainDropdown] = useState(false)
@@ -76,6 +77,7 @@ export default function EditWritingGPPage() {
           keywords: post.keywords || '',
           anchorPairs: post.anchorPairs || [{ text: '', link: '' }]
         })
+        setPostStatus(post.status || 'draft')
       } catch (error: any) {
         console.error('Load error:', error)
         toast.error(error?.message || 'Failed to load post')
@@ -503,7 +505,7 @@ export default function EditWritingGPPage() {
               )}
             </div>
 
-            {!isViewOnly && (
+            {!isViewOnly && !(['inProgress', 'approved'].includes(postStatus)) && (
               <div className="flex gap-3">
                 <button onClick={saveDraft} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                   <Save className="w-4 h-4" />

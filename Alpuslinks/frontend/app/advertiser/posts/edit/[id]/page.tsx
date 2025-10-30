@@ -31,6 +31,7 @@ export default function EditPostPage() {
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [postStatus, setPostStatus] = useState<string>('draft')
   const [initialLoadComplete, setInitialLoadComplete] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -132,6 +133,7 @@ export default function EditPostPage() {
           keywords: p.keywords || '',
           content: p.content || ''
         })
+        setPostStatus(p.status || 'draft')
         
         setAnchorPairs(Array.isArray(p.anchorPairs) ? p.anchorPairs.map((pair: any, index: number) => ({
           id: index.toString(),
@@ -1133,7 +1135,7 @@ export default function EditPostPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  {!isViewOnly && (
+                  {!isViewOnly && !(['inProgress', 'approved'].includes(postStatus)) && (
                     <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 dark:border-gray-700/50 overflow-hidden hover:shadow-3xl transition-all duration-300">
                       <div className="p-4 space-y-3">
                         <button
