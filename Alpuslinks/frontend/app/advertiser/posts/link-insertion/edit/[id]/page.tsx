@@ -2,7 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save, Send } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -22,12 +22,17 @@ interface LinkInsertionAsPost {
 export default function EditLinkInsertionAsPostPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const postId = (params?.id as string) || ''
   const dispatch = useAppDispatch()
+  
+  // Check if this is a view-only mode (from orders page)
+  const isViewOnly = searchParams.get('viewOnly') === 'true'
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [websites, setWebsites] = useState<any[]>([])
+  const [orderStatus, setOrderStatus] = useState<string | null>(null)
   const [formData, setFormData] = useState<LinkInsertionAsPost>({
     title: '',
     completeUrl: '',
@@ -40,6 +45,14 @@ export default function EditLinkInsertionAsPostPage() {
     ],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Check if buttons should be hidden based on order status
+  const shouldHideButtons = () => {
+    if (isViewOnly) return true
+    if (!orderStatus) return false
+    // Hide buttons when order status is: requested, inProgress, rejected, or completed
+    return ['requested', 'inProgress', 'rejected', 'completed'].includes(orderStatus)
+  }
 
   // Fetch websites for domain validation
   const fetchWebsites = async () => {
@@ -55,6 +68,32 @@ export default function EditLinkInsertionAsPostPage() {
     } catch (error) {
       console.error('Error fetching websites:', error)
       toast.error('Failed to load websites')
+    }
+  }
+
+  // Fetch orders to check if this post is associated with any orders
+  const fetchOrderStatus = async () => {
+    try {
+      // Fetch all advertiser orders to find orders associated with this post
+      const response = await apiService.getAdvertiserOrders({})
+      
+      if ((response.data as any)?.success) {
+        const orders = (response.data as any).data?.orders || []
+        
+        // Find orders where postId or linkInsertionId matches this post
+        const relatedOrder = orders.find((order: any) => {
+          const orderPostId = order.postId?._id || order.postId
+          const orderLinkInsertionId = order.linkInsertionId?._id || order.linkInsertionId
+          return orderPostId === postId || orderLinkInsertionId === postId
+        })
+        
+        if (relatedOrder) {
+          setOrderStatus(relatedOrder.status)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching order status:', error)
+      // Don't show error to user, just silently fail
     }
   }
 
@@ -83,6 +122,9 @@ export default function EditLinkInsertionAsPostPage() {
           keywords: post.keywords || '',
           anchorPairs: post.anchorPairs || [{ text: '', link: '' }]
         })
+        
+        // Check for associated orders after post is loaded
+        await fetchOrderStatus()
       } catch (error: any) {
         console.error('Load error:', error)
         toast.error(error?.message || 'Failed to load post')
@@ -294,16 +336,33 @@ export default function EditLinkInsertionAsPostPage() {
               />
             </div>
 
-            <div className="flex gap-3">
-              <button onClick={saveDraft} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save Draft'}</span>
-              </button>
-              <button onClick={submit} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                <Send className="w-4 h-4" />
-                <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
-              </button>
-            </div>
+            {!shouldHideButtons() && (
+              <div className="flex gap-3">
+                <button onClick={saveDraft} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving...' : 'Save Draft'}</span>
+                </button>
+                <button onClick={submit} disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                  <Send className="w-4 h-4" />
+                  <span>{saving ? 'Submitting...' : 'Send to Moderation'}</span>
+                </button>
+              </div>
+            )}
+            
+            {/* View Only Notice */}
+            {(isViewOnly || shouldHideButtons()) && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
+                  <Send className="w-5 h-5" />
+                  <span className="font-medium">View Only Mode</span>
+                </div>
+                <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                  {orderStatus 
+                    ? `This link insertion is associated with an order that is ${orderStatus}. Editing is disabled to prevent conflicts with ongoing work.`
+                    : 'You are viewing this link insertion from an order. Editing is disabled to prevent conflicts with ongoing work.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

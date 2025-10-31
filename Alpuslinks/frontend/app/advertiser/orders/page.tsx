@@ -225,22 +225,34 @@ export default function AdvertiserOrdersPage() {
   const handleViewDetails = (order: Order) => {
     const viewOnlyParam = '?viewOnly=true'
     
-    if (order.type === 'guestPost' && order.postId) {
-      router.push(`/advertiser/posts/edit/${order.postId._id}${viewOnlyParam}`)
-    } else if (order.type === 'linkInsertion') {
-      // Always navigate to the Post-based Link Insertion editor
-      const postBasedId = order.postId?._id
-      const li: any = order.linkInsertionId as any
-      const fallbackId = (typeof li === 'string') ? li : (li?._id || li?.id)
-      const targetId = postBasedId || fallbackId
+    // For link insertion orders, the backend now populates postId for link insertion orders
+    // since linkInsertionId contains the Post ID
+    if (order.type === 'linkInsertion') {
+      let targetId: string | null = null
+      
+      // Try postId first (backend should populate this now)
+      if (order.postId?._id) {
+        targetId = order.postId._id
+      } 
+      // Fallback to linkInsertionId if postId is not available
+      else if (order.linkInsertionId) {
+        if (typeof order.linkInsertionId === 'object' && (order.linkInsertionId as any)._id) {
+          targetId = (order.linkInsertionId as any)._id
+        } else if (typeof order.linkInsertionId === 'string') {
+          targetId = order.linkInsertionId
+        }
+      }
+      
       if (targetId) {
         router.push(`/advertiser/posts/link-insertion/edit/${targetId}${viewOnlyParam}`)
       } else {
+        console.error('Link insertion order missing ID:', order)
         toast.error('No link insertion found to view')
       }
-      return
     } else if (order.type === 'writingGuestPost' && order.postId) {
       router.push(`/advertiser/posts/writing-gp/edit/${order.postId._id}${viewOnlyParam}`)
+    } else if (order.type === 'guestPost' && order.postId) {
+      router.push(`/advertiser/posts/edit/${order.postId._id}${viewOnlyParam}`)
     } else {
       toast.error('Unable to view details for this order type')
     }
