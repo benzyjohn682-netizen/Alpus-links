@@ -107,6 +107,14 @@ router.get('/publisher', auth, async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Get raw orders first to access linkInsertionId for link insertion orders
+    const rawOrders = await Order.find(query)
+      .lean()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Populate orders
     const orders = await Order.find(query)
       .populate('advertiserId', 'firstName lastName email company')
       .populate('websiteId', 'domain url')
@@ -115,6 +123,37 @@ router.get('/publisher', auth, async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
+
+    // For link insertion orders, linkInsertionId contains the Post ID
+    // So we need to also populate postId for link insertion orders
+    for (let i = 0; i < orders.length; i++) {
+      const order = orders[i];
+      const rawOrder = rawOrders[i];
+      
+      if (order.type === 'linkInsertion' && !order.postId && rawOrder?.linkInsertionId) {
+        // Get the raw linkInsertionId value (it's a Post ID, not LinkInsertion ID)
+        let postIdStr = null;
+        
+        // Handle different formats of linkInsertionId
+        if (rawOrder.linkInsertionId instanceof mongoose.Types.ObjectId) {
+          postIdStr = rawOrder.linkInsertionId.toString();
+        } else if (typeof rawOrder.linkInsertionId === 'string') {
+          postIdStr = rawOrder.linkInsertionId;
+        } else if (rawOrder.linkInsertionId && rawOrder.linkInsertionId.toString) {
+          postIdStr = rawOrder.linkInsertionId.toString();
+        }
+        
+        if (postIdStr) {
+          // This ID is actually a Post ID, so populate it as postId
+          const post = await Post.findById(postIdStr)
+            .select('title content');
+          
+          if (post) {
+            order.postId = post;
+          }
+        }
+      }
+    }
 
     const total = await Order.countDocuments(query);
 

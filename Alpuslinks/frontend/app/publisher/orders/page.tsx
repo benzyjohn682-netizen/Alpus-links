@@ -514,9 +514,6 @@ export default function PublisherTaskManagementPage() {
                             <p className="font-semibold text-gray-900 dark:text-white text-sm">
                               {task.advertiserId.firstName} {task.advertiserId.lastName}
                             </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 break-all">
-                              {task.advertiserId.email}
-                            </p>
                             {task.advertiserId.company && (
                               <p className="text-xs text-gray-500 dark:text-gray-500 font-medium">
                                 {task.advertiserId.company}
@@ -553,7 +550,9 @@ export default function PublisherTaskManagementPage() {
                             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                               <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                             </div>
-                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Post</h4>
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {task.type === 'linkInsertion' ? 'Link' : 'Post'}
+                            </h4>
                           </div>
                           <div className="space-y-1">
                             {task.postId ? (
@@ -562,7 +561,7 @@ export default function PublisherTaskManagementPage() {
                               </p>
                             ) : (
                               <p className="text-sm text-gray-500 dark:text-gray-500 italic">
-                                No post assigned
+                                {task.type === 'linkInsertion' ? 'No link insertion assigned' : 'No post assigned'}
                               </p>
                             )}
                           </div>
