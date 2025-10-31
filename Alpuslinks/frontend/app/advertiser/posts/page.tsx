@@ -53,6 +53,8 @@ export default function PostManagementPage() {
   const [postToDelete, setPostToDelete] = useState<Post | null>(null)
   const [requestedOrderPostIds, setRequestedOrderPostIds] = useState<Set<string>>(new Set())
   const [requestedOrderDomains, setRequestedOrderDomains] = useState<Set<string>>(new Set())
+  const [orderStatusMap, setOrderStatusMap] = useState<Map<string, string>>(new Map())
+  const [orderDomainStatusMap, setOrderDomainStatusMap] = useState<Map<string, string>>(new Map())
 
   // Helper function to extract domain from completeUrl
   const getDomainFromUrl = (url: string): string => {
@@ -65,43 +67,78 @@ export default function PostManagementPage() {
     }
   }
 
-  // Fetch posts and requested orders
+  // Fetch posts and orders
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        // Fetch posts
+        // Fetch posts and all orders (not just requested)
         const [postsRes, ordersRes] = await Promise.all([
           apiService.getPosts(),
-          apiService.getAdvertiserOrders({ status: 'requested' })
+          apiService.getAdvertiserOrders({})
         ])
 
         setPosts(postsRes.data?.posts || [])
 
-        // Map requested orders to related content IDs and website domains
-        const orders = (ordersRes as any)?.data?.data?.orders || []
+        // Map orders to related content IDs and website domains with their statuses
+        const orders = (ordersRes as any)?.data?.data?.orders || (ordersRes as any)?.data?.orders || []
         const postIds = new Set<string>()
         const domains = new Set<string>()
+        const statusMap = new Map<string, string>()
+        const domainStatusMap = new Map<string, string>()
+        
         for (const order of orders) {
+          const orderStatus = order.status || 'requested'
+          
+          // Track by postId
           if (order?.postId?._id) {
-            postIds.add(order.postId._id)
+            const postId = order.postId._id
+            postIds.add(postId)
+            // Map post ID to order status (prioritize inProgress, requested, then others)
+            if (!statusMap.has(postId) || orderStatus === 'inProgress') {
+              statusMap.set(postId, orderStatus)
+            } else if (statusMap.get(postId) !== 'inProgress' && orderStatus === 'requested') {
+              statusMap.set(postId, orderStatus)
+            }
           }
+          
+          // Track by linkInsertionId (which is actually a Post ID for link insertion orders)
           if (order?.linkInsertionId?._id) {
-            postIds.add(order.linkInsertionId._id)
+            const postId = order.linkInsertionId._id
+            postIds.add(postId)
+            if (!statusMap.has(postId) || orderStatus === 'inProgress') {
+              statusMap.set(postId, orderStatus)
+            } else if (statusMap.get(postId) !== 'inProgress' && orderStatus === 'requested') {
+              statusMap.set(postId, orderStatus)
+            }
           }
+          
+          // Track by domain for link-insertion and writing-gp orders
           const websiteDomain = order?.websiteId?.domain
-          if (websiteDomain) {
-            domains.add(String(websiteDomain).toLowerCase())
+          if (websiteDomain && (order.type === 'linkInsertion' || order.type === 'writingGuestPost')) {
+            const domainKey = String(websiteDomain).toLowerCase()
+            domains.add(domainKey)
+            // Map domain to order status (prioritize inProgress, requested, then others)
+            if (!domainStatusMap.has(domainKey) || orderStatus === 'inProgress') {
+              domainStatusMap.set(domainKey, orderStatus)
+            } else if (domainStatusMap.get(domainKey) !== 'inProgress' && orderStatus === 'requested') {
+              domainStatusMap.set(domainKey, orderStatus)
+            }
           }
         }
+        
         setRequestedOrderPostIds(postIds)
         setRequestedOrderDomains(domains)
+        setOrderStatusMap(statusMap)
+        setOrderDomainStatusMap(domainStatusMap)
       } catch (error: any) {
         console.error('Failed to fetch posts or orders:', error)
         toast.error(error?.message || 'Failed to load posts')
         setPosts([])
         setRequestedOrderPostIds(new Set())
         setRequestedOrderDomains(new Set())
+        setOrderStatusMap(new Map())
+        setOrderDomainStatusMap(new Map())
       } finally {
         setLoading(false)
       }
@@ -496,7 +533,32 @@ export default function PostManagementPage() {
                           const domainForPost = (post.domain || getDomainFromUrl(post.completeUrl) || '').toLowerCase()
                           const isRequestedById = requestedOrderPostIds.has(post._id)
                           const isRequestedByDomain = (post.postType === 'link-insertion' || post.postType === 'writing-gp') && requestedOrderDomains.has(domainForPost)
-                          const displayStatus = (isRequestedById || isRequestedByDomain) ? 'request' : post.status
+                          
+                          // Determine order status
+                          let orderStatus: string | null = null
+                          if (isRequestedById) {
+                            orderStatus = orderStatusMap.get(post._id) || null
+                          } else if (isRequestedByDomain) {
+                            orderStatus = orderDomainStatusMap.get(domainForPost) || null
+                          }
+                          
+                          // Map order status to display status
+                          let displayStatus = post.status
+                          if (orderStatus) {
+                            // Map order statuses to post statuses
+                            if (orderStatus === 'inProgress') {
+                              displayStatus = 'inProgress'
+                            } else if (orderStatus === 'requested') {
+                              displayStatus = 'request'
+                            } else if (orderStatus === 'advertiserApproval') {
+                              displayStatus = 'pending'
+                            } else if (orderStatus === 'completed') {
+                              displayStatus = 'approved'
+                            } else if (orderStatus === 'rejected') {
+                              displayStatus = 'rejected'
+                            }
+                          }
+                          
                           return (
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(displayStatus)}`}>
                               {getStatusIcon(displayStatus)}
