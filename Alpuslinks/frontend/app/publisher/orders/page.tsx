@@ -23,6 +23,7 @@ import {
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/contexts/auth-context'
+import { useRouter } from 'next/navigation'
 
 // Types
 interface Task {
@@ -70,6 +71,7 @@ interface TabData {
 }
 
 export default function PublisherTaskManagementPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('requested')
   const [tasks, setTasks] = useState<Task[]>([])
@@ -77,6 +79,11 @@ export default function PublisherTaskManagementPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  
+  // Handle view details - navigate to order details page
+  const handleViewDetails = (task: Task) => {
+    router.push(`/publisher/orders/${task._id}`)
+  }
 
   // Tab configuration
   const tabs: TabData[] = [
@@ -636,7 +643,7 @@ export default function PublisherTaskManagementPage() {
                         {/* Hide view details button for requested status */}
                         {task.status !== 'requested' && (
                           <button
-                            onClick={() => {/* View task details */}}
+                            onClick={() => handleViewDetails(task)}
                             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center space-x-2 text-sm font-medium"
                             title="View Details"
                           >

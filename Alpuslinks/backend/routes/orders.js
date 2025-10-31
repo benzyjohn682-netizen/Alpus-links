@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Post = require('../models/Post');
 const LinkInsertion = require('../models/LinkInsertion');
@@ -508,11 +509,21 @@ router.get('/:orderId', auth, async (req, res) => {
     const { orderId } = req.params;
     const userId = req.user.id;
 
+    // Get raw order first to access linkInsertionId for link insertion orders
+    const rawOrder = await Order.findById(orderId).lean();
+
+    if (!rawOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
     const order = await Order.findById(orderId)
       .populate('advertiserId', 'firstName lastName email company')
       .populate('publisherId', 'firstName lastName email')
       .populate('websiteId', 'domain url')
-      .populate('postId', 'title content')
+      .populate('postId', 'title content metaTitle metaDescription keywords completeUrl anchorPairs')
       .populate('linkInsertionId', 'anchorText anchorUrl');
 
     if (!order) {
@@ -528,6 +539,47 @@ router.get('/:orderId', auth, async (req, res) => {
         success: false,
         message: 'You are not authorized to view this order'
       });
+    }
+
+    // For link insertion orders, linkInsertionId contains the Post ID
+    // So we need to also populate postId for link insertion orders
+    if (order.type === 'linkInsertion') {
+      // Check if postId is already populated, if not, try to populate from linkInsertionId
+      if (!order.postId && rawOrder?.linkInsertionId) {
+        // Get the raw linkInsertionId value (it's a Post ID, not LinkInsertion ID)
+        let postIdStr = null;
+        
+        // Handle different formats of linkInsertionId
+        if (rawOrder.linkInsertionId instanceof mongoose.Types.ObjectId) {
+          postIdStr = rawOrder.linkInsertionId.toString();
+        } else if (typeof rawOrder.linkInsertionId === 'string') {
+          postIdStr = rawOrder.linkInsertionId;
+        } else if (rawOrder.linkInsertionId && rawOrder.linkInsertionId.toString) {
+          postIdStr = rawOrder.linkInsertionId.toString();
+        }
+        
+        console.log('Link insertion order - postIdStr:', postIdStr);
+        
+        if (postIdStr) {
+          // This ID is actually a Post ID, so populate it as postId
+          const post = await Post.findById(postIdStr)
+            .select('title content metaTitle metaDescription keywords completeUrl anchorPairs');
+          
+          console.log('Found post for link insertion:', post ? post._id : 'not found');
+          
+          if (post) {
+            order.postId = post;
+          }
+        } else {
+          console.log('No postIdStr extracted from linkInsertionId:', rawOrder.linkInsertionId);
+        }
+      } else if (!order.postId) {
+        console.log('Link insertion order but no postId or linkInsertionId:', {
+          hasPostId: !!order.postId,
+          hasLinkInsertionId: !!rawOrder?.linkInsertionId,
+          rawOrderLinkInsertionId: rawOrder?.linkInsertionId
+        });
+      }
     }
 
     res.json({
