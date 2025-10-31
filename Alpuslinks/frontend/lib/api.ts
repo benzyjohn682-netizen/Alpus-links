@@ -883,6 +883,12 @@ class ApiService {
       body: JSON.stringify({ status, note, rejectionReason })
     })
   }
+
+  async deleteOrderByAdmin(orderId: string) {
+    return this.request(`/orders/admin/${orderId}`, {
+      method: 'DELETE'
+    })
+  }
 }
 
 export const apiService = new ApiService(API_BASE_URL)

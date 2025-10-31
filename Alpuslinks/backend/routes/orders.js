@@ -517,6 +517,46 @@ router.get('/:orderId', auth, async (req, res) => {
   }
 });
 
+// Delete order by admin/super admin
+router.delete('/admin/:orderId', auth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userRole = req.user.role?.name;
+
+    // Check if user is admin or super admin
+    if (!['admin', 'super admin'].includes(userRole?.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Delete the order
+    await Order.findByIdAndDelete(orderId);
+
+    res.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete order',
+      error: error.message
+    });
+  }
+});
+
 // Get order statistics
 router.get('/stats/:userId', auth, async (req, res) => {
   try {

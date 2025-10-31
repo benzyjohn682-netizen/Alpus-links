@@ -24,7 +24,8 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  Building
+  Building,
+  Trash2
 } from 'lucide-react'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
@@ -118,6 +119,8 @@ export default function AdminOrdersPage() {
   const [newStatus, setNewStatus] = useState('')
   const [statusNote, setStatusNote] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null)
 
   // Tab configuration
   const tabs: TabData[] = [
@@ -206,6 +209,37 @@ export default function AdminOrdersPage() {
       console.error('Error updating bulk orders:', err)
       toast.error('Failed to update some orders')
     }
+  }
+
+  // Handle delete order
+  const handleDeleteOrder = (order: Order) => {
+    setOrderToDelete(order)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!orderToDelete) return
+
+    try {
+      const response = await apiService.deleteOrderByAdmin(orderToDelete._id) as any
+      
+      if (response.data?.success) {
+        toast.success('Order deleted successfully')
+        setShowDeleteModal(false)
+        setOrderToDelete(null)
+        fetchOrders() // Refresh the list
+      } else {
+        throw new Error(response.data?.message || 'Failed to delete order')
+      }
+    } catch (err) {
+      console.error('Error deleting order:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to delete order')
+    }
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false)
+    setOrderToDelete(null)
   }
 
   // Format date helper
@@ -654,6 +688,13 @@ export default function AdminOrdersPage() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
+                            <button
+                              onClick={() => handleDeleteOrder(order)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              title="Delete Order"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -789,6 +830,52 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
         </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && orderToDelete && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+              <div className="mt-3">
+                <div className="flex items-center mb-4">
+                  <div className="flex-shrink-0 w-10 h-10 mx-auto flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                    <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    Delete Order
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Are you sure you want to delete this order? This action cannot be undone.
+                  </p>
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+                    <p>Order ID: {orderToDelete._id}</p>
+                    <p>Type: {orderToDelete.type === 'guestPost' ? 'Guest Post' : 
+                             orderToDelete.type === 'linkInsertion' ? 'Link Insertion' : 
+                             'Writing + GP'}</p>
+                    <p>Status: {orderToDelete.status}</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={cancelDelete}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete Order
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
