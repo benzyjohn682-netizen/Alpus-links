@@ -253,7 +253,7 @@ export function WebsiteManagement() {
                   placeholder="Search by name, domain, or description..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange({ search: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-lg backdrop-blur-sm font-medium"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white/80 dark:bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-lg backdrop-blur-sm font-medium"
                 />
                 <div className="absolute inset-y-0 right-0 pr-2 flex items-center">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>

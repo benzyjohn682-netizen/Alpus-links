@@ -146,28 +146,49 @@ export default function PublisherTaskManagementPage() {
     handleOrderStatusUpdate(orderId, 'rejected', 'Order rejected', rejectionReason)
   }
 
-  // Fetch global stats for counts
+  // Fetch counts by fetching all publisher orders and counting by status
   const fetchCounts = async () => {
     try {
-      const userId = (user as any)?.id || (user as any)?._id
-      if (!userId) return
-      const response = await apiService.getOrderStats(userId)
+      // Fetch all orders for this publisher without status filter
+      const response = await apiService.getPublisherOrders({
+        status: undefined,
+        page: 1,
+        limit: 1000 // Get enough to count accurately
+      })
+      
       if ((response.data as any)?.success) {
-        const data = (response.data as any).data || {}
-        const raw = data.stats
-        if (Array.isArray(raw)) {
-          setStats({ total: typeof data.total === 'number' ? data.total : (raw.reduce((a: number, s: any) => a + (s?.count || 0), 0)), stats: raw })
-        } else if (raw && typeof raw === 'object') {
-          const orderedKeys = ['requested','inProgress','completed','rejected']
-          const arr = orderedKeys.map(k => ({ status: k, count: Number((raw as any)[k] || 0) }))
-          const total = arr.reduce((a, s) => a + s.count, 0)
-          setStats({ total, stats: arr })
-        } else {
-          setStats({ total: 0, stats: [] })
+        const allOrders = (response.data as any).data?.orders || []
+        const pagination = (response.data as any).data?.pagination || {}
+        
+        // Count orders by status
+        const countsByStatus: Record<string, number> = {
+          requested: 0,
+          inProgress: 0,
+          completed: 0,
+          rejected: 0
         }
+        
+        allOrders.forEach((order: any) => {
+          const status = order.status
+          if (status && countsByStatus.hasOwnProperty(status)) {
+            countsByStatus[status]++
+          }
+        })
+        
+        // Use pagination total if available, otherwise use orders length
+        const total = pagination.total ?? allOrders.length
+        const statsArray = Object.entries(countsByStatus).map(([status, count]) => ({
+          status,
+          count
+        }))
+        
+        setStats({ total, stats: statsArray })
+      } else {
+        setStats({ total: 0, stats: [] })
       }
     } catch (err) {
-      console.error('Error fetching order stats:', err)
+      console.error('Error fetching order counts:', err)
+      setStats({ total: 0, stats: [] })
     }
   }
 

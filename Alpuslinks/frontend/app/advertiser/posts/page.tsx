@@ -51,6 +51,8 @@ export default function PostManagementPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [postToDelete, setPostToDelete] = useState<Post | null>(null)
+  const [requestedOrderPostIds, setRequestedOrderPostIds] = useState<Set<string>>(new Set())
+  const [requestedOrderDomains, setRequestedOrderDomains] = useState<Set<string>>(new Set())
 
   // Helper function to extract domain from completeUrl
   const getDomainFromUrl = (url: string): string => {
@@ -63,23 +65,49 @@ export default function PostManagementPage() {
     }
   }
 
-  // Fetch posts from API
+  // Fetch posts and requested orders
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await apiService.getPosts()
-        setPosts(response.data?.posts || [])
+        // Fetch posts
+        const [postsRes, ordersRes] = await Promise.all([
+          apiService.getPosts(),
+          apiService.getAdvertiserOrders({ status: 'requested' })
+        ])
+
+        setPosts(postsRes.data?.posts || [])
+
+        // Map requested orders to related content IDs and website domains
+        const orders = (ordersRes as any)?.data?.data?.orders || []
+        const postIds = new Set<string>()
+        const domains = new Set<string>()
+        for (const order of orders) {
+          if (order?.postId?._id) {
+            postIds.add(order.postId._id)
+          }
+          if (order?.linkInsertionId?._id) {
+            postIds.add(order.linkInsertionId._id)
+          }
+          const websiteDomain = order?.websiteId?.domain
+          if (websiteDomain) {
+            domains.add(String(websiteDomain).toLowerCase())
+          }
+        }
+        setRequestedOrderPostIds(postIds)
+        setRequestedOrderDomains(domains)
       } catch (error: any) {
-        console.error('Failed to fetch posts:', error)
+        console.error('Failed to fetch posts or orders:', error)
         toast.error(error?.message || 'Failed to load posts')
         setPosts([])
+        setRequestedOrderPostIds(new Set())
+        setRequestedOrderDomains(new Set())
       } finally {
         setLoading(false)
       }
     }
 
-    fetchPosts()
+    fetchData()
   }, [])
 
   const getStatusIcon = (status: string) => {
@@ -90,6 +118,8 @@ export default function PostManagementPage() {
         return <CheckCircle className="w-4 h-4 text-blue-500" />
       case 'inProgress':
         return <Clock className="w-4 h-4 text-blue-600" />
+      case 'request':
+        return <Clock className="w-4 h-4 text-orange-500" />
       case 'pending':
         return <Clock className="w-4 h-4 text-yellow-500" />
       case 'rejected':
@@ -109,6 +139,8 @@ export default function PostManagementPage() {
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
       case 'inProgress':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'request':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
       case 'rejected':
@@ -460,10 +492,18 @@ export default function PostManagementPage() {
 
                       {/* Status and Actions */}
                       <div className="flex items-center space-x-3 ml-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(post.status)}`}>
-                          {getStatusIcon(post.status)}
-                          <span className="ml-1 capitalize">{post.status}</span>
-                        </span>
+                        {(() => {
+                          const domainForPost = (post.domain || getDomainFromUrl(post.completeUrl) || '').toLowerCase()
+                          const isRequestedById = requestedOrderPostIds.has(post._id)
+                          const isRequestedByDomain = (post.postType === 'link-insertion' || post.postType === 'writing-gp') && requestedOrderDomains.has(domainForPost)
+                          const displayStatus = (isRequestedById || isRequestedByDomain) ? 'request' : post.status
+                          return (
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(displayStatus)}`}>
+                              {getStatusIcon(displayStatus)}
+                              <span className="ml-1 capitalize">{displayStatus}</span>
+                            </span>
+                          )
+                        })()}
                         {post.status !== 'inProgress' && (
                           <>
                             <button
@@ -473,13 +513,23 @@ export default function PostManagementPage() {
                             >
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleDeletePost(post)}
-                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              title="Delete Post"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {(() => {
+                              const domainForPost = (post.domain || getDomainFromUrl(post.completeUrl) || '').toLowerCase()
+                              const isRequestedById = requestedOrderPostIds.has(post._id)
+                              const isRequestedByDomain = (post.postType === 'link-insertion' || post.postType === 'writing-gp') && requestedOrderDomains.has(domainForPost)
+                              const displayStatus = (isRequestedById || isRequestedByDomain) ? 'request' : post.status
+                              const hideDelete = displayStatus === 'request' || displayStatus === 'inProgress' || displayStatus === 'approved' || displayStatus === 'published' || displayStatus === 'completed'
+                              if (hideDelete) return null
+                              return (
+                                <button
+                                  onClick={() => handleDeletePost(post)}
+                                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  title="Delete Post"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )
+                            })()}
                           </>
                         )}
                       </div>
