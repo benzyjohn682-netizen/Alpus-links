@@ -517,6 +517,70 @@ router.get('/:orderId', auth, async (req, res) => {
   }
 });
 
+// Get orders by userId (for admin to view all orders for a specific user)
+router.get('/admin/by-user/:userId', auth, async (req, res) => {
+  try {
+    const userRole = req.user.role?.name;
+    
+    // Check if user is admin or super admin
+    if (!['admin', 'super admin'].includes(userRole?.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { userId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Find orders where user is either advertiser or publisher
+    const orders = await Order.find({
+      $or: [
+        { advertiserId: userId },
+        { publisherId: userId }
+      ]
+    })
+      .populate('advertiserId', 'firstName lastName email company')
+      .populate('publisherId', 'firstName lastName email')
+      .populate('websiteId', 'domain url')
+      .populate('postId', 'title content')
+      .populate('linkInsertionId', 'anchorText anchorUrl')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Order.countDocuments({
+      $or: [
+        { advertiserId: userId },
+        { publisherId: userId }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching orders by user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
+      error: error.message
+    });
+  }
+});
+
 // Delete order by admin/super admin
 router.delete('/admin/:orderId', auth, async (req, res) => {
   try {

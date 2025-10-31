@@ -632,6 +632,14 @@ class ApiService {
     })
   }
 
+  async getPostsByUserId(userId: string) {
+    return this.request(`/posts/admin/by-user/${userId}`)
+  }
+
+  async getOrdersByUserId(userId: string) {
+    return this.request(`/orders/admin/by-user/${userId}`)
+  }
+
   // Role management endpoints
   async getAllRoles() {
     return this.request('/roles')

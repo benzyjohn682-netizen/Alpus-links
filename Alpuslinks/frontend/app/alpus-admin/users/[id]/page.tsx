@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { apiService } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Edit, Trash2, Key, Mail, Phone, Calendar, Shield, Activity, Globe, User, Clock, X } from 'lucide-react'
+import { ArrowLeft, Edit, Trash2, Key, Mail, Phone, Calendar, Shield, Activity, Globe, User, Clock, X, ClipboardList, FileText } from 'lucide-react'
 
 interface User {
   _id: string
@@ -56,6 +56,61 @@ interface UserActivity {
   userAgent?: string
 }
 
+interface Order {
+  _id: string
+  advertiserId: {
+    _id: string
+    firstName: string
+    lastName: string
+    email: string
+    company?: string
+  }
+  publisherId: {
+    _id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+  websiteId: {
+    _id: string
+    domain: string
+    url: string
+  }
+  postId?: {
+    _id: string
+    title: string
+    content?: string
+  }
+  linkInsertionId?: {
+    _id: string
+    anchorText: string
+    anchorUrl: string
+  }
+  type: 'guestPost' | 'linkInsertion' | 'writingGuestPost'
+  status: 'requested' | 'inProgress' | 'advertiserApproval' | 'completed' | 'rejected'
+  price: number
+  notes?: string
+  createdAt: string
+  updatedAt: string
+  rejectionReason?: string
+}
+
+interface Post {
+  _id: string
+  title: string
+  slug: string
+  completeUrl: string
+  description: string
+  status: 'draft' | 'pending' | 'inProgress' | 'approved' | 'rejected'
+  postType: 'regular' | 'link-insertion' | 'writing-gp'
+  createdAt: string
+  updatedAt: string
+  anchorPairs?: Array<{
+    text: string
+    link: string
+  }>
+}
+
 export default function UserDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -63,6 +118,10 @@ export default function UserDetailPage() {
   
   const [user, setUser] = useState<User | null>(null)
   const [activities, setActivities] = useState<UserActivity[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [posts, setPosts] = useState<Post[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [postsLoading, setPostsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [passwordChanging, setPasswordChanging] = useState(false)
@@ -96,6 +155,8 @@ export default function UserDetailPage() {
     if (userId) {
       loadUser()
       loadUserActivities()
+      loadOrders()
+      loadPosts()
     }
   }, [userId])
 
@@ -155,6 +216,36 @@ export default function UserDetailPage() {
       }
     } catch (err: any) {
       console.error('Failed to load user activities:', err)
+    }
+  }
+
+  const loadOrders = async () => {
+    try {
+      setOrdersLoading(true)
+      const response = await apiService.getOrdersByUserId(userId) as any
+      if (response.data?.success) {
+        setOrders(response.data.data.orders || [])
+      }
+    } catch (err: any) {
+      console.error('Failed to load orders:', err)
+      setOrders([])
+    } finally {
+      setOrdersLoading(false)
+    }
+  }
+
+  const loadPosts = async () => {
+    try {
+      setPostsLoading(true)
+      const response = await apiService.getPostsByUserId(userId) as any
+      if (response.data?.success) {
+        setPosts(response.data.data.posts || [])
+      }
+    } catch (err: any) {
+      console.error('Failed to load posts:', err)
+      setPosts([])
+    } finally {
+      setPostsLoading(false)
     }
   }
 
@@ -261,7 +352,7 @@ export default function UserDetailPage() {
     setPasswordForm({ newPassword: '', confirmPassword: '', currentPassword: '' })
   }
 
-  const getStatusColor = (status: string) => {
+  const getBadgeStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
       case 'inactive': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
@@ -274,11 +365,71 @@ export default function UserDetailPage() {
     return new Date(dateString).toLocaleString()
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'requested':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+      case 'inProgress':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'advertiserApproval':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+      case 'completed':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+      case 'rejected':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+      case 'draft':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+      case 'approved':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+    }
+  }
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'guestPost':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'linkInsertion':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+      case 'writingGuestPost':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+      case 'regular':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'link-insertion':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+      case 'writing-gp':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+    }
+  }
+
+  const getPostTypeLabel = (postType: string) => {
+    switch (postType) {
+      case 'regular': return 'Guest Post'
+      case 'link-insertion': return 'Link Insertion'
+      case 'writing-gp': return 'Writing + GP'
+      default: return postType
+    }
+  }
+
+  const getOrderTypeLabel = (type: string) => {
+    switch (type) {
+      case 'guestPost': return 'Guest Post'
+      case 'linkInsertion': return 'Link Insertion'
+      case 'writingGuestPost': return 'Writing + GP'
+      default: return type
+    }
+  }
+
   if (loading) {
     return (
       <ProtectedRoute allowedRoles={["super admin", "admin"]}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
-          <div className="max-w-6xl mx-auto px-4">
+          <div className="w-full px-4">
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -295,7 +446,7 @@ export default function UserDetailPage() {
     return (
       <ProtectedRoute allowedRoles={["super admin", "admin"]}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
-          <div className="max-w-6xl mx-auto px-4">
+          <div className="w-full px-4">
             <div className="text-center py-20">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">User Not Found</h1>
               <p className="text-gray-600 dark:text-gray-400 mb-6">The user you're looking for doesn't exist.</p>
@@ -316,8 +467,8 @@ export default function UserDetailPage() {
   return (
     <ProtectedRoute allowedRoles={["super admin", "admin"]}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="max-w-4xl w-full mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div className="w-full px-4">
+          <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg">
           {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-4">
@@ -353,7 +504,7 @@ export default function UserDetailPage() {
 
             <form onSubmit={handleUpdate} className="p-6">
               {/* Form Fields */}
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* First Name Row */}
                 <div className="flex items-center">
                   <div className="w-32 flex-shrink-0">
@@ -699,6 +850,171 @@ export default function UserDetailPage() {
                 </button>
             </div>
             </form>
+
+            {/* Orders Table */}
+            <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-8 px-6 pb-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <ClipboardList className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Orders ({orders.length})
+                </h3>
+              </div>
+              
+              {ordersLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No orders found for this user.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Order ID
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {user?.role?.name === 'advertiser' ? 'Publisher' : 'Advertiser'}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Website
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Price
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Created
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {orders.map((order) => (
+                        <tr key={order._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">
+                            {order._id.substring(0, 8)}...
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(order.type)}`}>
+                              {getOrderTypeLabel(order.type)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {user?.role?.name === 'advertiser' 
+                              ? `${order.publisherId.firstName} ${order.publisherId.lastName}`
+                              : `${order.advertiserId.firstName} ${order.advertiserId.lastName}`}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {order.websiteId.domain}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeStatusColor(order.status)}`}>
+                              {order.status.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            ${order.price.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {formatDate(order.createdAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Posts Table */}
+            <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-8 px-6 pb-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Posts ({posts.length})
+                </h3>
+              </div>
+              
+              {postsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No posts found for this user.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Title
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          URL
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Created
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Updated
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {posts.map((post) => (
+                        <tr key={post._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                            {post.title || 'Untitled'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(post.postType)}`}>
+                              {getPostTypeLabel(post.postType)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                            <a 
+                              href={post.completeUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-xs block"
+                            >
+                              {post.completeUrl}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeStatusColor(post.status)}`}>
+                              {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {formatDate(post.createdAt)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {formatDate(post.updatedAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

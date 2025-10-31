@@ -308,6 +308,37 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// Get posts by advertiserId (admin only)
+router.get('/admin/by-user/:userId', auth, async (req, res) => {
+  try {
+    const userRole = req.user.role?.name;
+    
+    // Check if user is admin or super admin
+    if (!['admin', 'super admin'].includes(userRole?.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    const { userId } = req.params;
+    const posts = await Post.find({ advertiserId: userId })
+      .sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      data: { posts }
+    });
+  } catch (error) {
+    console.error('Get posts by user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch posts',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
 
 
